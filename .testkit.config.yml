@@ -1,0 +1,12 @@
+---
+log_level: trace
+
+# PostgreSQL connection configuration
+postgres:
+  host: localhost:5544
+  user: testkit
+  password: badger
+  database: testkit_db
+  query_params:
+    sslmode: disable
+  migrations:
