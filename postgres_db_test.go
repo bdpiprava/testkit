@@ -9,12 +9,12 @@ import (
 func TestConfig_BuildConnectionString(t *testing.T) {
 	testCases := []struct {
 		name   string
-		config testkit.Config
+		config testkit.PostgresConfig
 		want   string
 	}{
 		{
 			name: "should build connection string with default values",
-			config: testkit.Config{
+			config: testkit.PostgresConfig{
 				Database: "postgres",
 				Host:     "localhost",
 				User:     "postgres",
@@ -28,7 +28,7 @@ func TestConfig_BuildConnectionString(t *testing.T) {
 		},
 		{
 			name: "should build connection string with host and port",
-			config: testkit.Config{
+			config: testkit.PostgresConfig{
 				Database: "xyz",
 				Host:     "localhost:5432",
 				User:     "postgres",

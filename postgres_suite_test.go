@@ -16,11 +16,10 @@ func TestDatabaseIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *DatabaseIntegrationTestSuite) TestSuite_RequiresPostgresDatabase() {
-	db, err := s.RequiresPostgresDatabase("test")
-	s.Require().NoError(err)
+	db := s.RequiresPostgresDatabase("test")
 
 	var version string
-	err = db.Get(&version, "SELECT VERSION()")
+	err := db.Get(&version, "SELECT VERSION()")
 	s.Require().NoError(err)
 
 	s.Require().NotEmpty(version)

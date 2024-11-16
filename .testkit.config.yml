@@ -9,4 +9,3 @@ postgres:
   database: testkit_db
   query_params:
     sslmode: disable
-  migrations:

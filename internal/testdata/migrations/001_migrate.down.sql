@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS films;
+DROP TABLE IF EXISTS distributors;
