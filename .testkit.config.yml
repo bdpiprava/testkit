@@ -9,3 +9,10 @@ postgres:
   database: testkit_db
   query_params:
     sslmode: disable
+
+# MySQL connection configuration
+kafka:
+  host: localhost:9092
+  topic: testkit
+  group_id: testkit
+  auto_offset_reset: earliest
