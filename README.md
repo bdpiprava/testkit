@@ -38,6 +38,12 @@ go-migrate:
   migration_path: path/to/migrations
   fresh: true
   is_template: false
+
+# Elasticsearch connection configuration
+elasticsearch:
+  addresses: http://localhost:9200 # comma separated list of addresses
+  username: testkit
+  password: badger
 ```
 
 ### Configuration Fields
@@ -73,3 +79,13 @@ configuration.
 | migration_path | Path to the directory containing migration files.         |
 | fresh          | Recreate the database if exist before running migrations. |
 | is_template    | Create the database as a template database.               |
+
+#### Elasticsearch Configuration Fields
+
+This is the configuration for the Elasticsearch connection.
+
+| Field     | Description                                      |
+|-----------|--------------------------------------------------|
+| addresses | Comma separated list of Elasticsearch addresses. |
+| username  | Elasticsearch username.                          |
+| password  | Elasticsearch password.                          |

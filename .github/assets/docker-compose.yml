@@ -1,0 +1,30 @@
+---
+services:
+  postgres:
+    image: postgres:14.2
+    container_name: testkit-postgres
+    ports:
+      - '5544:5432'
+    environment:
+      LC_ALL: C.UTF-8
+      POSTGRES_DB: testkit_db
+      POSTGRES_USER: testkit
+      POSTGRES_PASSWORD: badger
+    volumes:
+      - ./.data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d testkit_db -U testkit" ]
+      interval: 5s
+      timeout: 60s
+      retries: 10
+
+  elasticsearch:
+    image: elasticsearch:7.12.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - cluster.name=testkit
+      - "ES_JAVA_OPTS=-Xms750m -Xmx750m"
+      - discovery.type=single-node
