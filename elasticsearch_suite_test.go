@@ -31,6 +31,7 @@ func TestElasticSearchSuiteTest(t *testing.T) {
 }
 
 func (s *ElasticSearchSuiteTest) Test_CreateIndex() {
+	s.DeleteIndices("test_index_*")
 	indexName := fmt.Sprintf("test_index_%d", time.Now().Unix())
 
 	err := s.CreateIndex(indexName, 1, 1, false, exampleMappings())
@@ -42,6 +43,7 @@ func (s *ElasticSearchSuiteTest) Test_CreateIndex() {
 }
 
 func (s *ElasticSearchSuiteTest) Test_DeleteIndices() {
+	s.DeleteIndices("test_index_*")
 	indexName := fmt.Sprintf("test_index_%d", time.Now().Unix())
 	s.Require().NoError(s.CreateIndex(indexName, 1, 1, false, exampleMappings()))
 	s.True(s.IndexExists(indexName))
@@ -54,6 +56,7 @@ func (s *ElasticSearchSuiteTest) Test_DeleteIndices() {
 }
 
 func (s *ElasticSearchSuiteTest) Test_GetIndexSettings() {
+	s.DeleteIndices("test_index_*")
 	indexName := fmt.Sprintf("test_index_%d", time.Now().Unix())
 	s.Require().NoError(s.CreateIndex(indexName, 1, 1, false, exampleMappings()))
 
