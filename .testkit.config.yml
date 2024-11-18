@@ -10,9 +10,8 @@ postgres:
   query_params:
     sslmode: disable
 
-# MySQL connection configuration
-kafka:
-  host: localhost:9092
-  topic: testkit
-  group_id: testkit
-  auto_offset_reset: earliest
+# Elasticsearch connection configuration
+elasticsearch:
+  addresses: http://localhost:9200 # comma separated list of addresses
+  username: testkit
+  password: badger

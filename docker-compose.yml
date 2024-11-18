@@ -17,3 +17,14 @@ services:
       interval: 5s
       timeout: 60s
       retries: 10
+
+  elasticsearch:
+    image: elasticsearch:7.12.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - cluster.name=testkit
+      - "ES_JAVA_OPTS=-Xms750m -Xmx750m"
+      - discovery.type=single-node

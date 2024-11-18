@@ -4,6 +4,8 @@ go 1.23.2
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.6.0
+	github.com/elastic/go-elasticsearch/v7 v7.17.10
+	github.com/google/go-cmp v0.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/pkg/errors v0.9.1
