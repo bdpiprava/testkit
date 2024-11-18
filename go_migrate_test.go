@@ -140,6 +140,6 @@ func unsetEnvVar() {
 
 func assertDatabaseCreated(t *testing.T, db *sqlx.DB, database string, isTemplate bool) {
 	var fromDB bool
-	assert.NoError(t, db.Get(&fromDB, "SELECT datistemplate FROM pg_database WHERE datname='%s'", database))
+	assert.NoError(t, db.Get(&fromDB, fmt.Sprintf(`SELECT datistemplate FROM pg_database WHERE datname='%s'`, database)))
 	assert.Equal(t, fromDB, isTemplate)
 }
