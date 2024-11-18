@@ -8,6 +8,8 @@ import (
 )
 
 // ContextSuite for context mapping
+//
+//goland:noinspection GoNameStartsWithPackageName
 type ContextSuite struct {
 	suite.Suite
 	ctxMap      map[string]*Context

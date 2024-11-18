@@ -68,7 +68,7 @@ func InitialiseDatabase() (*sqlx.DB, error) {
 		log.WithError(err).Errorf("failed to connect to %s database", rootDatabase)
 		return nil, err
 	}
-	defer root.Close()
+	defer closeSilently(root)
 
 	exists, err := postgresDB.exists(root, cfg.DatabaseName)
 	if err != nil {

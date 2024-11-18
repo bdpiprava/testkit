@@ -36,7 +36,7 @@ jobs:
         run: go get . && go install gotest.tools/gotestsum@latest
 
       - name: Start containers
-        run: docker compose -f .github/assets/docker-compose.yml up -d
+        run: docker compose -f .github/assets/docker-compose.yml up
 
       - name: Run unit tests
         run: gotestsum --format testname

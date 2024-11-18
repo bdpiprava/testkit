@@ -93,7 +93,7 @@ func (s *ElasticSearchSuite) CreateIndex(index string, numberOfShards, numberOfR
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer closeSilently(resp.Body)
 
 	if resp.IsError() {
 		return fmt.Errorf("failed to create index: %s", resp.String())
@@ -132,7 +132,7 @@ func (s *ElasticSearchSuite) FindIndices(pattern string) Indices {
 		esClient.Cat.Indices.WithFormat("json"),
 	)
 	s.Require().NoError(err)
-	defer resp.Body.Close()
+	defer closeSilently(resp.Body)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return make(Indices, 0)
@@ -231,4 +231,8 @@ func (s *ElasticSearchSuite) initialiseSuite() {
 	}
 
 	log.Infof("Connection established %s", res.String())
+}
+
+func closeSilently(closable io.Closer) {
+	_ = closable.Close()
 }

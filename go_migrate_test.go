@@ -8,6 +8,7 @@ import (
 
 	"github.com/bdpiprava/testkit"
 	"github.com/bdpiprava/testkit/internal"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,10 +28,9 @@ postgres:
 )
 
 func Test_InitialiseDatabase_MissingConfigFile(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
 	_ = os.Setenv(internal.EnvConfigLocation, "non-existing-config.yml")
-	defer os.Unsetenv(internal.EnvConfigLocation)
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
 
 	db, err := testkit.InitialiseDatabase()
 
@@ -39,9 +39,8 @@ func Test_InitialiseDatabase_MissingConfigFile(t *testing.T) {
 }
 
 func Test_InitialiseDatabase_MissingGoMigrateConfigInFile(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
-	defer os.Unsetenv(internal.EnvConfigLocation)
 
 	file := createFile(t, "config.yaml", configWithoutGoMigrate)
 	_ = os.Setenv(internal.EnvConfigLocation, file)
@@ -53,9 +52,8 @@ func Test_InitialiseDatabase_MissingGoMigrateConfigInFile(t *testing.T) {
 }
 
 func Test_InitialiseDatabase_WithTemplateTrue(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
-	defer os.Unsetenv(internal.EnvConfigLocation)
 
 	migrationDir := createTestMigration(t)
 	file := createGoMigrateConfig(t, migrationDir, "template_001", true, true)
@@ -67,17 +65,13 @@ func Test_InitialiseDatabase_WithTemplateTrue(t *testing.T) {
 	// Then
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
-	defer db.Close()
-
-	var isTemplate bool
-	assert.NoError(t, db.Get(&isTemplate, "SELECT datistemplate FROM pg_database WHERE datname='template_001'"))
-	assert.True(t, isTemplate)
+	assertDatabaseCreated(t, db, "template_001", true)
+	defer closeSilently(db)
 }
 
 func Test_InitialiseDatabase_WithTemplateFalse(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
-	defer os.Unsetenv(internal.EnvConfigLocation)
 
 	migrationDir := createTestMigration(t)
 	file := createGoMigrateConfig(t, migrationDir, "template_002", false, true)
@@ -89,11 +83,12 @@ func Test_InitialiseDatabase_WithTemplateFalse(t *testing.T) {
 	// Then
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
-	defer db.Close()
+	assertDatabaseCreated(t, db, "template_002", false)
+	defer closeSilently(db)
+}
 
-	var isTemplate bool
-	assert.NoError(t, db.Get(&isTemplate, "SELECT datistemplate FROM pg_database WHERE datname='template_002'"))
-	assert.False(t, isTemplate)
+func closeSilently(db *sqlx.DB) {
+	_ = db.Close()
 }
 
 func createFileInDir(name, content string) error {
@@ -136,4 +131,15 @@ func createTestMigration(t *testing.T) string {
 	assert.NoError(t, createFileInDir(filepath.Join(rootDir, "001_test_migration.down.sql"), "DROP TABLE test_table;"))
 
 	return rootDir
+}
+
+func unsetEnvVar() {
+	_ = os.Unsetenv(internal.EnvConfigLocation)
+	_ = os.Unsetenv(internal.EnvDisableConfigCache)
+}
+
+func assertDatabaseCreated(t *testing.T, db *sqlx.DB, database string, isTemplate bool) {
+	var fromDB bool
+	assert.NoError(t, db.Get(&fromDB, "SELECT datistemplate FROM pg_database WHERE datname='%s'", database))
+	assert.Equal(t, fromDB, isTemplate)
 }

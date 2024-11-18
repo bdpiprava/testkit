@@ -79,7 +79,7 @@ func (p *PostgresDB) delete(name string) error {
 	if err != nil {
 		return err
 	}
-	defer root.Close()
+	defer closeSilently(root)
 
 	_, err = root.Exec(fmt.Sprintf(`DROP DATABASE %v`, name))
 	return err
@@ -91,7 +91,7 @@ func (p *PostgresDB) deleteTemplateDB(name string) error {
 	if err != nil {
 		return err
 	}
-	defer root.Close()
+	defer closeSilently(root)
 
 	_, err = root.Exec(fmt.Sprintf("ALTER DATABASE %s is_template FALSE", name))
 	if err != nil {
@@ -114,7 +114,7 @@ func (p *PostgresDB) createDatabase(ctx context.Context, targetName string) (*sq
 	if err != nil {
 		return nil, err
 	}
-	defer root.Close()
+	defer closeSilently(root)
 
 	// return on error or if the database already exists
 	if exists, err := p.exists(root, targetName); err != nil || exists {

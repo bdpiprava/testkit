@@ -7,7 +7,7 @@ import (
 
 	"github.com/bdpiprava/testkit"
 	"github.com/google/go-cmp/cmp"
-	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/suite"
 )
 

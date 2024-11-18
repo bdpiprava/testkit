@@ -10,10 +10,9 @@ import (
 )
 
 func Test_ReadConfig_ViaEnv(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
 	_ = os.Setenv(internal.EnvConfigLocation, "testdata/config.yml")
-	defer os.Unsetenv(internal.EnvConfigLocation)
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
 
 	content, err := internal.ReadConfigFile()
 
@@ -22,8 +21,8 @@ func Test_ReadConfig_ViaEnv(t *testing.T) {
 }
 
 func Test_ReadConfig_ViaWorkingDir(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
 	content, err := internal.ReadConfigFile()
 
 	assert.NoError(t, err)
@@ -31,9 +30,8 @@ func Test_ReadConfig_ViaWorkingDir(t *testing.T) {
 }
 
 func Test_ReadConfigAs(t *testing.T) {
+	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
-	defer os.Unsetenv(internal.EnvConfigLocation)
-	defer os.Unsetenv(internal.EnvDisableConfigCache)
 
 	type Result map[string]any
 
@@ -77,4 +75,9 @@ key-2: value-2
 			assert.Equal(t, tc.want, result)
 		})
 	}
+}
+
+func unsetEnvVar() {
+	_ = os.Unsetenv(internal.EnvConfigLocation)
+	_ = os.Unsetenv(internal.EnvDisableConfigCache)
 }
