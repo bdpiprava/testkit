@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/bdpiprava/testkit/internal"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_ReadConfig_ViaEnv(t *testing.T) {
@@ -16,8 +17,8 @@ func Test_ReadConfig_ViaEnv(t *testing.T) {
 
 	content, err := internal.ReadConfigFile()
 
-	assert.NoError(t, err)
-	assert.Len(t, content, 15)
+	require.NoError(t, err)
+	require.Len(t, content, 15)
 }
 
 func Test_ReadConfig_ViaWorkingDir(t *testing.T) {
@@ -25,8 +26,8 @@ func Test_ReadConfig_ViaWorkingDir(t *testing.T) {
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
 	content, err := internal.ReadConfigFile()
 
-	assert.NoError(t, err)
-	assert.Len(t, content, 26)
+	require.NoError(t, err)
+	require.Len(t, content, 26)
 }
 
 func Test_ReadConfigAs(t *testing.T) {
@@ -65,14 +66,14 @@ key-2: value-2
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			location := filepath.Join(t.TempDir(), "config.yml")
-			err := os.WriteFile(location, []byte(tc.fileContent), 0644)
-			assert.NoError(t, err)
+			err := os.WriteFile(location, []byte(tc.fileContent), 0600)
+			require.NoError(t, err)
 			_ = os.Setenv(internal.EnvConfigLocation, location)
 
 			result, err := internal.ReadConfigAs[Result]()
 
-			assert.NoError(t, err)
-			assert.Equal(t, tc.want, result)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, result)
 		})
 	}
 }

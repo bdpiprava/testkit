@@ -4,9 +4,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bdpiprava/testkit"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/bdpiprava/testkit"
 )
 
 type KafkaTestSuiteTest struct {

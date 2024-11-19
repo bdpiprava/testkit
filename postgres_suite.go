@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // postgres driver
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/bdpiprava/testkit/context"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -25,7 +26,7 @@ func init() {
 
 // PostgresSuite is a suite that provides tooling for postgres integration tests
 type PostgresSuite struct {
-	context.ContextSuite
+	context.CtxSuite
 	postgresDB *PostgresDB
 }
 

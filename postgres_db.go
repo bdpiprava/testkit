@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/bdpiprava/testkit/context"
-	"github.com/bdpiprava/testkit/internal"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bdpiprava/testkit/context"
+	"github.com/bdpiprava/testkit/internal"
 )
 
 const (
@@ -24,7 +25,7 @@ type PostgresConfig struct {
 	Database     string            `yaml:"name"`          // Database of the database
 	User         string            `yaml:"user"`          // User of the database
 	Password     string            `yaml:"password"`      // Password of the database
-	Host         string            `yaml:"host"`          // Host of the database, you can also provide port e.g. localhost:5432
+	Host         string            `yaml:"host"`          // Host of the database e.g. localhost:5432
 	QueryParams  map[string]string `yaml:"query_params"`  // QueryParams of the database
 	FromTemplate string            `yaml:"from_template"` // FromTemplate prepare the database from the template
 }

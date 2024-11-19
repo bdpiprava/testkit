@@ -3,8 +3,9 @@ package context
 import (
 	"context"
 
-	"github.com/bdpiprava/testkit/internal"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bdpiprava/testkit/internal"
 )
 
 // Key is a type for context key

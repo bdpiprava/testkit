@@ -7,17 +7,15 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// ContextSuite for context mapping
-//
-//goland:noinspection GoNameStartsWithPackageName
-type ContextSuite struct {
+// CtxSuite for context mapping
+type CtxSuite struct {
 	suite.Suite
 	ctxMap      map[string]*Context
 	initializer sync.Once
 }
 
 // Initialize the context for the suite
-func (s *ContextSuite) Initialize(name string) (err error) {
+func (s *CtxSuite) Initialize(name string) (err error) {
 	log := baseLogger.WithFields(logrus.Fields{
 		"func": "Initialize",
 		"name": name,
@@ -40,7 +38,7 @@ func (s *ContextSuite) Initialize(name string) (err error) {
 }
 
 // GetContext returns the context created for the current test, if not exists then creates a new context and returns
-func (s *ContextSuite) GetContext(name string) *Context {
+func (s *CtxSuite) GetContext(name string) *Context {
 	log := baseLogger.WithFields(logrus.Fields{
 		"func": "GetContext",
 		"name": name,

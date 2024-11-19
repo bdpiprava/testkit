@@ -5,20 +5,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bdpiprava/testkit/context"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bdpiprava/testkit/context"
 )
 
-const pollTimeoutMs = 3000
-const deliveryTimeout = 5 * time.Second
+const pollTimeout = 10 * time.Second
+const deliveryTimeout = 10 * time.Second
 
 // OnMessage is a callback function that is called when a message is received
 type OnMessage func(*kafka.Message) bool
 
 // KafkaSuite is a suite that provides tooling for postgres integration tests
 type KafkaSuite struct {
-	context.ContextSuite
+	context.CtxSuite
 	servers     map[string]*kafka.MockCluster
 	initializer sync.Once
 }
@@ -89,7 +90,7 @@ func (s *KafkaSuite) Produce(topic string, key, value []byte, headers ...kafka.H
 	log.Info("Waiting for delivery confirmation")
 	select {
 	case <-time.After(deliveryTimeout):
-		log.Fatal("Delivery timeout")
+		s.FailNow("Delivery timeout")
 	case <-deliveryChan:
 		log.Info("Delivered")
 		break
@@ -115,7 +116,7 @@ func (s *KafkaSuite) Consume(topics []string, callback OnMessage) {
 
 	go func(consumer *kafka.Consumer) {
 		for {
-			ev := consumer.Poll(pollTimeoutMs)
+			ev := consumer.Poll(int(pollTimeout.Milliseconds()))
 			switch e := ev.(type) {
 			case *kafka.Message:
 				log.Trace("Received message")

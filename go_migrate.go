@@ -3,14 +3,15 @@ package testkit
 import (
 	"fmt"
 
-	"github.com/bdpiprava/testkit/context"
-	"github.com/bdpiprava/testkit/internal"
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres" // postgres driver
+	_ "github.com/golang-migrate/migrate/v4/source/file"       // file driver
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/bdpiprava/testkit/context"
+	"github.com/bdpiprava/testkit/internal"
 )
 
 const createFromTemplateQuery = `CREATE DATABASE %v WITH TEMPLATE '%v' OWNER ccs`
@@ -82,7 +83,7 @@ func InitialiseDatabase() (*sqlx.DB, error) {
 			return postgresDB.connect(cfg.DatabaseName)
 		}
 
-		log.Info("exist but requested fresh database, hence deleting the exsiting database")
+		log.Info("exist but requested fresh database, hence deleting the existing database")
 		err := postgresDB.deleteTemplateDB(cfg.DatabaseName)
 		if err != nil {
 			log.WithError(err).Error("failed to delete database")
