@@ -21,6 +21,7 @@ type OnMessage func(*kafka.Message) bool
 type KafkaSuite struct {
 	context.CtxSuite
 	servers     map[string]*kafka.MockCluster
+	consumers   []*kafka.Consumer
 	initializer sync.Once
 }
 
@@ -32,6 +33,7 @@ func (s *KafkaSuite) RequiresKafka(topics ...string) string {
 
 	s.initializer.Do(func() {
 		s.servers = make(map[string]*kafka.MockCluster)
+		s.consumers = make([]*kafka.Consumer, 0)
 	})
 
 	ctx := s.GetContext(s.T().Name())
@@ -112,25 +114,31 @@ func (s *KafkaSuite) Consume(topics []string, callback OnMessage) {
 	log.Info("Creating consumer")
 	consumer, err := kafka.NewConsumer(s.getKafkaConfig())
 	s.Require().NoError(err)
+	s.consumers = append(s.consumers, consumer)
 	s.Require().NoError(consumer.SubscribeTopics(topics, nil))
 
 	go func(consumer *kafka.Consumer) {
+		done := false
 		for {
+			if done {
+				closeSilently(consumer)
+				break
+			}
+
 			ev := consumer.Poll(int(pollTimeout.Milliseconds()))
 			switch e := ev.(type) {
 			case *kafka.Message:
 				log.Trace("Received message")
 				if callback(e) {
-					_ = consumer.Close()
+					done = true
 				}
 			case kafka.PartitionEOF:
 				log.Info("Partition EOF")
-				return
+				break
 			case kafka.Error:
 				s.Require().NoError(e)
 			case kafka.AssignedPartitions:
 				s.Require().NoError(consumer.Assign(e.Partitions))
-				return
 			}
 		}
 	}(consumer)
@@ -155,6 +163,10 @@ func (s *KafkaSuite) getCluster() *kafka.MockCluster {
 
 // TearDownSuite perform the cleanup of the database
 func (s *KafkaSuite) TearDownSuite() {
+	for _, c := range s.consumers {
+		closeSilently(c)
+	}
+
 	for _, s := range s.servers {
 		s.Close()
 	}

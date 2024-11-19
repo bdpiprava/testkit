@@ -5,7 +5,8 @@ BUILD_DIR=build
 
 ## Run tests
 tests:
-	@go test -race=1 ./...
+	@go install github.com/mfridman/tparse@latest
+	@go test -race=1 ./... -json | tparse -follow -pass
 
 ## Remove build and vendor directory
 clean:
