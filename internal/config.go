@@ -66,7 +66,7 @@ func ReadConfigFile() ([]byte, error) {
 		return nil, err
 	}
 
-	location, err = findConfigFile(wd)
+	location, err = locateConfigFile(wd)
 	if err != nil {
 		configCache = &cache{err: err}
 		return nil, err
@@ -74,6 +74,40 @@ func ReadConfigFile() ([]byte, error) {
 
 	configCache = readConfigFile(location, false)
 	return configCache.content, configCache.err
+}
+
+// locateConfigFile finds the config file in the current directory or its parent
+func locateConfigFile(workingDir string) (string, error) {
+	// start from it
+	currentDir := filepath.Clean(workingDir)
+	info, err := os.Stat(currentDir)
+	if err != nil {
+		return "", err
+	}
+
+	if !info.IsDir() {
+		currentDir = filepath.Dir(currentDir)
+	}
+
+	for {
+		path, err := containsConfigFile(currentDir)
+		if err != nil {
+			return "", err
+		}
+
+		if path != "" {
+			return path, nil
+		}
+
+		// go up one level
+		parent := filepath.Dir(currentDir)
+		if currentDir == parent || parent == "" {
+			break
+		}
+		currentDir = parent
+	}
+
+	return "", fmt.Errorf("config file not found")
 }
 
 // readConfigFile reads the content of the file and returns the cache struct
@@ -87,18 +121,18 @@ func readConfigFile(path string, loadedViaEnv bool) *cache {
 	}
 }
 
-// findConfigFile finds the config file in the given directory
-func findConfigFile(root string) (string, error) {
-	entries, err := os.ReadDir(root)
+// containsConfigFile returns file name if the directory contains a config file
+func containsConfigFile(dir string) (string, error) {
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return "", err
 	}
 
 	for _, entry := range entries {
 		if configFileMatcher.MatchString(entry.Name()) {
-			return filepath.Join(root, entry.Name()), nil
+			return strings.TrimSpace(filepath.Join(dir, entry.Name())), nil
 		}
 	}
 
-	return "", fmt.Errorf("config file not found in %s", root)
+	return "", nil
 }

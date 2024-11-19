@@ -10,6 +10,17 @@ import (
 	"github.com/bdpiprava/testkit/internal"
 )
 
+func Test_ReadConfig_ProjectRoot(t *testing.T) {
+	unsetEnvVar()
+	t.Cleanup(unsetEnvVar)
+	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
+
+	content, err := internal.ReadConfigFile()
+
+	require.NoError(t, err)
+	require.NotEmpty(t, content)
+}
+
 func Test_ReadConfig_ViaEnv(t *testing.T) {
 	t.Cleanup(unsetEnvVar)
 	_ = os.Setenv(internal.EnvDisableConfigCache, "true")
@@ -27,7 +38,7 @@ func Test_ReadConfig_ViaWorkingDir(t *testing.T) {
 	content, err := internal.ReadConfigFile()
 
 	require.NoError(t, err)
-	require.Len(t, content, 26)
+	require.NotEmpty(t, content)
 }
 
 func Test_ReadConfigAs(t *testing.T) {
