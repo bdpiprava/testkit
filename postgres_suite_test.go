@@ -3,8 +3,9 @@ package testkit_test
 import (
 	"testing"
 
-	"github.com/bdpiprava/testkit"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/bdpiprava/testkit"
 )
 
 type DatabaseIntegrationTestSuite struct {

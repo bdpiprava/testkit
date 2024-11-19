@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bdpiprava/testkit"
 	"github.com/bdpiprava/testkit/internal"
-	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -34,8 +35,8 @@ func Test_InitialiseDatabase_MissingConfigFile(t *testing.T) {
 
 	db, err := testkit.InitialiseDatabase()
 
-	assert.Nil(t, db)
-	assert.EqualError(t, err, "open non-existing-config.yml: no such file or directory")
+	require.Nil(t, db)
+	require.EqualError(t, err, "open non-existing-config.yml: no such file or directory")
 }
 
 func Test_InitialiseDatabase_MissingGoMigrateConfigInFile(t *testing.T) {
@@ -47,8 +48,8 @@ func Test_InitialiseDatabase_MissingGoMigrateConfigInFile(t *testing.T) {
 
 	db, err := testkit.InitialiseDatabase()
 
-	assert.Nil(t, db)
-	assert.EqualError(t, err, testkit.ErrMissingGoMigrateConfig.Error())
+	require.Nil(t, db)
+	require.EqualError(t, err, testkit.ErrMissingGoMigrateConfig.Error())
 }
 
 func Test_InitialiseDatabase_WithTemplateTrue(t *testing.T) {
@@ -63,8 +64,8 @@ func Test_InitialiseDatabase_WithTemplateTrue(t *testing.T) {
 	db, err := testkit.InitialiseDatabase()
 
 	// Then
-	assert.NoError(t, err)
-	assert.NotNil(t, db)
+	require.NoError(t, err)
+	require.NotNil(t, db)
 	assertDatabaseCreated(t, db, "template_001", true)
 	defer closeSilently(db)
 }
@@ -81,8 +82,8 @@ func Test_InitialiseDatabase_WithTemplateFalse(t *testing.T) {
 	db, err := testkit.InitialiseDatabase()
 
 	// Then
-	assert.NoError(t, err)
-	assert.NotNil(t, db)
+	require.NoError(t, err)
+	require.NotNil(t, db)
 	assertDatabaseCreated(t, db, "template_002", false)
 	defer closeSilently(db)
 }
@@ -92,12 +93,12 @@ func closeSilently(db *sqlx.DB) {
 }
 
 func createFileInDir(name, content string) error {
-	return os.WriteFile(name, []byte(content), 0644)
+	return os.WriteFile(name, []byte(content), 0600)
 }
 
 func createFile(t *testing.T, name, content string) string {
 	file := filepath.Join(t.TempDir(), name)
-	assert.NoError(t, os.WriteFile(file, []byte(content), 0644))
+	require.NoError(t, os.WriteFile(file, []byte(content), 0600))
 	return file
 }
 
@@ -125,10 +126,13 @@ go-migrate:
 
 func createTestMigration(t *testing.T) string {
 	rootDir := filepath.Join(t.TempDir(), "migrations")
-	assert.NoError(t, os.MkdirAll(rootDir, 0755))
+	require.NoError(t, os.MkdirAll(rootDir, 0755))
 
-	assert.NoError(t, createFileInDir(filepath.Join(rootDir, "001_test_migration.up.sql"), "CREATE TABLE test_table (id serial PRIMARY KEY);"))
-	assert.NoError(t, createFileInDir(filepath.Join(rootDir, "001_test_migration.down.sql"), "DROP TABLE test_table;"))
+	upContent := "CREATE TABLE test_table (id serial PRIMARY KEY);"
+	downContent := "DROP TABLE test_table;"
+
+	require.NoError(t, createFileInDir(filepath.Join(rootDir, "001_test_migration.up.sql"), upContent))
+	require.NoError(t, createFileInDir(filepath.Join(rootDir, "001_test_migration.down.sql"), downContent))
 
 	return rootDir
 }
@@ -140,6 +144,6 @@ func unsetEnvVar() {
 
 func assertDatabaseCreated(t *testing.T, db *sqlx.DB, database string, isTemplate bool) {
 	var fromDB bool
-	assert.NoError(t, db.Get(&fromDB, fmt.Sprintf(`SELECT datistemplate FROM pg_database WHERE datname='%s'`, database)))
-	assert.Equal(t, fromDB, isTemplate)
+	require.NoError(t, db.Get(&fromDB, fmt.Sprintf(`SELECT datistemplate FROM pg_database WHERE datname='%s'`, database)))
+	require.Equal(t, fromDB, isTemplate)
 }

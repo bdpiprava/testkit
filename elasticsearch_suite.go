@@ -57,13 +57,19 @@ func init() {
 
 // ElasticSearchSuite is the base test suite for all tests that require an ElasticSearch instance
 type ElasticSearchSuite struct {
-	context.ContextSuite
+	context.CtxSuite
 	initializer sync.Once
 	indices     map[string][]string
 }
 
 // CreateIndex creates a new index
-func (s *ElasticSearchSuite) CreateIndex(index string, numberOfShards, numberOfReplicas int, dynamic bool, properties map[string]any) error {
+func (s *ElasticSearchSuite) CreateIndex(
+	index string,
+	numberOfShards,
+	numberOfReplicas int,
+	dynamic bool,
+	properties map[string]any,
+) error {
 	s.initialiseSuite()
 	s.indices[s.T().Name()] = append(s.indices[s.T().Name()], index)
 
@@ -169,6 +175,7 @@ func (s *ElasticSearchSuite) GetIndexSettings(index string) IndexSetting {
 	all, _ := io.ReadAll(resp.Body)
 	var data getSettingsResponse
 	err = json.Unmarshal(all, &data)
+	s.Require().NoError(err)
 	return data[index].Settings.Index
 }
 
@@ -194,8 +201,8 @@ func (s *ElasticSearchSuite) TearDownTest() {
 }
 
 // EventuallyBlockStatus waits until the block status is the expected one
-func (s *ElasticSearchSuite) EventuallyBlockStatus(indexName string, status string, eventuallyTimeout, eventuallyInterval time.Duration) {
-	s.Eventually(s.checkBlockStatusFn(indexName, status), eventuallyTimeout, eventuallyInterval)
+func (s *ElasticSearchSuite) EventuallyBlockStatus(indexName string, status string, timeout, interval time.Duration) {
+	s.Eventually(s.checkBlockStatusFn(indexName, status), timeout, interval)
 }
 
 func (s *ElasticSearchSuite) checkBlockStatusFn(indexName string, status string) func() bool {

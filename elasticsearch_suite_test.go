@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bdpiprava/testkit"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/bdpiprava/testkit"
 )
 
 var exampleMappings = func() map[string]any {
@@ -74,7 +75,7 @@ func (s *ElasticSearchSuiteTest) Test_FindIndices() {
 	s.DeleteIndices("*_test_*")
 	expectedIndices := make(testkit.Indices, 0, 2)
 	randomNumber := time.Now().Unix()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		indexName := fmt.Sprintf("%d_test_%d", randomNumber, randomNumber+int64(i))
 		s.Require().NoError(s.CreateIndex(indexName, 1, 1, false, exampleMappings()))
 		expectedIndices = append(expectedIndices, testkit.Index{
