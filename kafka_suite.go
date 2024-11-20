@@ -19,7 +19,7 @@ type OnMessage func(*kafka.Message) bool
 // RequiresKafka is a helper function to get the test database based on configuration
 // returns the server address
 func (s *Suite) RequiresKafka(topics ...string) string {
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"test": s.T().Name(),
 		"func": "RequiresKafka",
@@ -45,7 +45,7 @@ func (s *Suite) RequiresKafka(topics ...string) string {
 
 // Produce a message to the kafka topic
 func (s *Suite) Produce(topic string, key, value []byte, headers ...kafka.Header) {
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	servers := s.getCluster().BootstrapServers()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"test":   s.T().Name(),
@@ -84,7 +84,7 @@ func (s *Suite) Produce(topic string, key, value []byte, headers ...kafka.Header
 
 // Consume a message from the kafka topic
 func (s *Suite) Consume(topics []string, callback OnMessage) {
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	servers := s.getCluster().BootstrapServers()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"test":   s.T().Name(),

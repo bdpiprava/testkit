@@ -20,7 +20,7 @@ example-service-1:
 example-service-2:
   - request:
       method: GET
-      path: /api/v1/example
+      path: /api/v1/info
       headers:
         Authorization: "Bearer abcd"
         Content-Type: "application/json"

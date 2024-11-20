@@ -38,10 +38,11 @@ func (s *CtxSuite) Initialize(name string) (err error) {
 }
 
 // GetContext returns the context created for the current test, if not exists then creates a new context and returns
-func (s *CtxSuite) GetContext(name string) *Context {
+func (s *CtxSuite) GetContext() *Context {
+	name := s.T().Name()
 	log := baseLogger.WithFields(logrus.Fields{
 		"func": "GetContext",
-		"name": name,
+		"test": name,
 	})
 
 	log.Trace("Start")

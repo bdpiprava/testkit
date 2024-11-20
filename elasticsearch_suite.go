@@ -46,7 +46,7 @@ func (s *Suite) CreateIndex(
 		Body:  bytes.NewReader(bb),
 	}
 
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	resp, err := req.Do(ctx, esClient)
 	if err != nil {
 		return err
@@ -73,14 +73,14 @@ func (s *Suite) IndexExists(name string) bool {
 
 // CloseIndices closes the indices
 func (s *Suite) CloseIndices(indices ...string) {
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	_, err := esClient.Indices.Close(indices, esClient.Indices.Close.WithContext(ctx))
 	s.Require().NoError(err)
 }
 
 // FindIndices returns matching indices sorted by name
 func (s *Suite) FindIndices(pattern string) internal.Indices {
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	resp, err := esClient.Cat.Indices(
 		esClient.Cat.Indices.WithContext(ctx),
 		esClient.Cat.Indices.WithIndex(pattern),

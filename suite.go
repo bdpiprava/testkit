@@ -51,7 +51,7 @@ func (s *Suite) SetupSuite() {
 			s.indices[s.T().Name()] = make([]string, 0)
 		}
 
-		ctx := s.GetContext(s.T().Name())
+		ctx := s.GetContext()
 		log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 			"test": s.T().Name(),
 			"func": "initialiseSuite",

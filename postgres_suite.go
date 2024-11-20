@@ -19,7 +19,7 @@ const (
 // RequiresPostgresDatabase is a helper function to get the test database based on configuration
 func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 	var err error
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	s.postgresDB, err = internal.NewPostgresDB(suiteConfig.PostgresConfig)
 	s.Require().NoError(err)
 
@@ -33,7 +33,7 @@ func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 
 // cleanDatabase delete the database instance
 func (s *Suite) cleanDatabase() {
-	ctx := s.GetContext(s.T().Name())
+	ctx := s.GetContext()
 	if db, ok := ctx.Value(keyDatabase).(*sqlx.DB); ok {
 		if db == nil {
 			return

@@ -2,6 +2,7 @@ package testkit
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -36,30 +37,35 @@ type Response struct {
 }
 
 // ToWiremockRequest converts the Request to a wiremock.StubRule
-func ToWiremockRequest(from Request, dynamicParams map[string]string) *wiremock.StubRule {
-	req := wiremock.NewStubRule(from.Method, wiremock.URLEqualTo(from.Path))
-	if strings.TrimSpace(from.Body) != "" {
-		req = req.WithBodyPattern(wiremock.EqualToJson(from.Body))
+func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.StubRule {
+	query := url.Values{}
+	for name, value := range r.QueryParams {
+		query.Set(name, resolveTemplateValue(value, dynamicParams))
 	}
 
-	for name, value := range from.QueryParams {
-		req = req.WithQueryParam(name, wiremock.Matching(resolveTemplateValue(value, dynamicParams)))
+	req := wiremock.NewStubRule(r.Method, wiremock.URLEqualTo(fmt.Sprintf("/%s?%s", r.Path, query.Encode())))
+	if strings.TrimSpace(r.Body) != "" {
+		req = req.WithBodyPattern(wiremock.EqualToJson(r.Body))
 	}
 
-	for name, value := range from.Headers {
+	for name, value := range query {
+		req = req.WithQueryParam(name, wiremock.Matching(value[0]))
+	}
+
+	for name, value := range r.Headers {
 		req = req.WithHeader(name, wiremock.Matching(resolveTemplateValue(value, dynamicParams)))
 	}
 	return req
 }
 
 // ToWiremockResponse converts the Response to a wiremock.Response
-func ToWiremockResponse(from Response) wiremock.Response {
+func (r *Response) ToWiremockResponse() wiremock.Response {
 	resp := wiremock.NewResponse().
-		WithJSONBody(from.Body).
-		WithStatus(from.Status)
+		WithBody(r.Body).
+		WithStatus(r.Status)
 
-	for name, value := range from.Headers {
-		resp.WithHeader(name, value)
+	for name, value := range r.Headers {
+		resp = resp.WithHeader(name, value)
 	}
 	return resp
 }

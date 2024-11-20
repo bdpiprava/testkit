@@ -137,9 +137,8 @@ the following methods to set up and tear down the resources:
 
 ### APIMock Helper Methods
 
-- **SetupAPIMocksFromFile** - Sets up the services mock from a file and returns the URLs. It takes the file path and a 
+- **SetupAPIMocksFromFile** - Sets up the services mock from a file and returns the URLs. It takes the file path and a
   map of dynamic parameters as parameters to replace the template values in the file.
-
 
 ### Example
 

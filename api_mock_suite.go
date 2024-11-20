@@ -20,14 +20,14 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 	serviceURLs := make(map[string]string)
 
 	for name, paths := range root {
-		testPath := filepath.Join(testNameSanitizer.ReplaceAllString(s.T().Name(), "_"), name)
+		testPath := filepath.Join(name, testNameSanitizer.ReplaceAllString(s.T().Name(), "_"))
 		serviceURLs[name], err = url.JoinPath(wiremockAddress, testPath)
 		s.Require().NoError(err)
 
 		for _, path := range paths {
 			path.Request.Path = filepath.Join(testPath, path.Request.Path)
-			err = wiremockClient.StubFor(ToWiremockRequest(path.Request, dynamicParams).
-				WillReturnResponse(ToWiremockResponse(path.Response)).
+			err = wiremockClient.StubFor(path.Request.ToWiremockRequest(dynamicParams).
+				WillReturnResponse(path.Response.ToWiremockResponse()).
 				AtPriority(1))
 
 			s.Require().NoError(err)
@@ -35,6 +35,12 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 	}
 
 	return serviceURLs
+}
+
+// CleanAPIMock resets the wiremock server
+func (s *Suite) CleanAPIMock() {
+	err := wiremockClient.Reset()
+	s.Require().NoError(err)
 }
 
 // readFile reads the config file and unmarshal it into the given type
