@@ -1,4 +1,4 @@
-package testkit
+package internal
 
 // Index represents the index on elasticsearch
 type Index struct {

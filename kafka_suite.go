@@ -2,7 +2,6 @@ package testkit
 
 import (
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -17,31 +16,15 @@ const deliveryTimeout = 10 * time.Second
 // OnMessage is a callback function that is called when a message is received
 type OnMessage func(*kafka.Message) bool
 
-// KafkaSuite is a suite that provides tooling for postgres integration tests
-type KafkaSuite struct {
-	context.CtxSuite
-	servers     map[string]*kafka.MockCluster
-	consumers   []*kafka.Consumer
-	initializer sync.Once
-}
-
 // RequiresKafka is a helper function to get the test database based on configuration
 // returns the server address
-func (s *KafkaSuite) RequiresKafka(topics ...string) string {
-	err := s.Initialize(s.T().Name())
-	s.Require().NoError(err)
-
-	s.initializer.Do(func() {
-		s.servers = make(map[string]*kafka.MockCluster)
-		s.consumers = make([]*kafka.Consumer, 0)
-	})
-
+func (s *Suite) RequiresKafka(topics ...string) string {
 	ctx := s.GetContext(s.T().Name())
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"test": s.T().Name(),
 		"func": "RequiresKafka",
 	})
-	if cluster, ok := s.servers[s.T().Name()]; ok {
+	if cluster, ok := s.kafkaServers[s.T().Name()]; ok {
 		log.Tracef("Kafka cluster already exists, returning bootstrap servers %s", cluster.BootstrapServers())
 		return cluster.BootstrapServers()
 	}
@@ -56,12 +39,12 @@ func (s *KafkaSuite) RequiresKafka(topics ...string) string {
 	}
 
 	log.Infof("Topics created: %v", topics)
-	s.servers[s.T().Name()] = cluster
+	s.kafkaServers[s.T().Name()] = cluster
 	return cluster.BootstrapServers()
 }
 
 // Produce a message to the kafka topic
-func (s *KafkaSuite) Produce(topic string, key, value []byte, headers ...kafka.Header) {
+func (s *Suite) Produce(topic string, key, value []byte, headers ...kafka.Header) {
 	ctx := s.GetContext(s.T().Name())
 	servers := s.getCluster().BootstrapServers()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
@@ -100,7 +83,7 @@ func (s *KafkaSuite) Produce(topic string, key, value []byte, headers ...kafka.H
 }
 
 // Consume a message from the kafka topic
-func (s *KafkaSuite) Consume(topics []string, callback OnMessage) {
+func (s *Suite) Consume(topics []string, callback OnMessage) {
 	ctx := s.GetContext(s.T().Name())
 	servers := s.getCluster().BootstrapServers()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
@@ -114,7 +97,7 @@ func (s *KafkaSuite) Consume(topics []string, callback OnMessage) {
 	log.Info("Creating consumer")
 	consumer, err := kafka.NewConsumer(s.getKafkaConfig())
 	s.Require().NoError(err)
-	s.consumers = append(s.consumers, consumer)
+	s.kafkaConsumers = append(s.kafkaConsumers, consumer)
 	s.Require().NoError(consumer.SubscribeTopics(topics, nil))
 
 	go func(consumer *kafka.Consumer) {
@@ -144,7 +127,7 @@ func (s *KafkaSuite) Consume(topics []string, callback OnMessage) {
 	}(consumer)
 }
 
-func (s *KafkaSuite) getKafkaConfig() *kafka.ConfigMap {
+func (s *Suite) getKafkaConfig() *kafka.ConfigMap {
 	return &kafka.ConfigMap{
 		"bootstrap.servers": s.getCluster().BootstrapServers(),
 		"group.id":          s.T().Name(),
@@ -153,21 +136,21 @@ func (s *KafkaSuite) getKafkaConfig() *kafka.ConfigMap {
 }
 
 // getCluster returns the kafka cluster
-func (s *KafkaSuite) getCluster() *kafka.MockCluster {
-	cluster, ok := s.servers[s.T().Name()]
+func (s *Suite) getCluster() *kafka.MockCluster {
+	cluster, ok := s.kafkaServers[s.T().Name()]
 	if !ok {
 		s.Require().Fail("Kafka cluster not found. call RequiresKafka before calling Produce")
 	}
 	return cluster
 }
 
-// TearDownSuite perform the cleanup of the database
-func (s *KafkaSuite) TearDownSuite() {
-	for _, c := range s.consumers {
+// cleanKafkaResources closes the kafka consumers and servers
+func (s *Suite) cleanKafkaResources() {
+	for _, c := range s.kafkaConsumers {
 		closeSilently(c)
 	}
 
-	for _, s := range s.servers {
+	for _, s := range s.kafkaServers {
 		s.Close()
 	}
 }

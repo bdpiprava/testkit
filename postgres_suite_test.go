@@ -9,7 +9,7 @@ import (
 )
 
 type DatabaseIntegrationTestSuite struct {
-	testkit.PostgresSuite
+	testkit.Suite
 }
 
 func TestDatabaseIntegrationTestSuite(t *testing.T) {

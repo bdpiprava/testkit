@@ -9,7 +9,7 @@ import (
 )
 
 type APIMockSuiteTestSuite struct {
-	testkit.APIMockSuite
+	testkit.Suite
 }
 
 func TestAPIMockSuiteTestSuite(t *testing.T) {

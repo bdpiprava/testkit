@@ -1,4 +1,4 @@
-package testkit
+package internal
 
 // IndexSetting represents the index settings
 type IndexSetting struct {
@@ -18,10 +18,15 @@ type Blocks struct {
 	ReadOnly string `json:"read_only"`
 }
 
-type settingsRoot struct {
+// SettingsRoot is wrapper for one index settings
+type SettingsRoot struct {
 	Index IndexSetting `json:"index"`
 }
-type getSettingsResponse map[string]settingsWrapper
-type settingsWrapper struct {
-	Settings settingsRoot `json:"settings"`
+
+// GetSettingsResponse is the response for get settings
+type GetSettingsResponse map[string]SettingsWrapper
+
+// SettingsWrapper is the wrapper for settings
+type SettingsWrapper struct {
+	Settings SettingsRoot `json:"settings"`
 }

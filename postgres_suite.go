@@ -1,15 +1,14 @@
 package testkit
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // postgres driver
 
-	"github.com/jmoiron/sqlx"
-
 	"github.com/bdpiprava/testkit/context"
+	"github.com/bdpiprava/testkit/internal"
 )
 
 const (
@@ -17,54 +16,34 @@ const (
 	keyDatabase     context.Key = "database"
 )
 
-func init() {
-	_, err := InitialiseDatabase()
-	if err != nil && !errors.Is(err, ErrMissingGoMigrateConfig) {
-		panic(err)
-	}
-}
-
-// PostgresSuite is a suite that provides tooling for postgres integration tests
-type PostgresSuite struct {
-	context.CtxSuite
-	postgresDB *PostgresDB
-}
-
 // RequiresPostgresDatabase is a helper function to get the test database based on configuration
-func (s *PostgresSuite) RequiresPostgresDatabase(name string) *sqlx.DB {
-	err := s.Initialize(s.T().Name())
-	s.Require().NoError(err)
-
+func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
+	var err error
 	ctx := s.GetContext(s.T().Name())
-	s.postgresDB, err = NewPostgresDB()
+	s.postgresDB, err = internal.NewPostgresDB(suiteConfig.PostgresConfig)
 	s.Require().NoError(err)
 
-	generatedName := s.generateName(name)
+	generatedName := s.generateDatabaseName(name)
 	ctx.SetData(keyDatabaseName, generatedName)
-	db, err := s.postgresDB.createDatabase(*ctx, name)
+	db, err := s.postgresDB.CreateDatabase(*ctx, name)
 	s.Require().NoError(err)
 	ctx.SetData(keyDatabase, db)
 	return db
 }
 
-// TearDownSuite perform the cleanup of the database
-func (s *PostgresSuite) TearDownSuite() {
-	defer s.CleanDatabase()
-}
-
-// CleanDatabase delete the database instance
-func (s *PostgresSuite) CleanDatabase() {
+// cleanDatabase delete the database instance
+func (s *Suite) cleanDatabase() {
 	ctx := s.GetContext(s.T().Name())
 	if db, ok := ctx.Value(keyDatabase).(*sqlx.DB); ok {
 		if db == nil {
 			return
 		}
 		_ = db.Close()
-		_ = s.postgresDB.delete(ctx.Value(keyDatabaseName).(string))
+		_ = s.postgresDB.Delete(ctx.Value(keyDatabaseName).(string))
 	}
 }
 
 // generateName generates a name with the given prefix and a timestamp
-func (s *PostgresSuite) generateName(prefix string) string {
+func (s *Suite) generateDatabaseName(prefix string) string {
 	return fmt.Sprintf("%s_%d", prefix, time.Now().UnixMilli())
 }

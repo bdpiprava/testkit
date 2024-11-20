@@ -8,69 +8,21 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/sirupsen/logrus"
 
-	"github.com/bdpiprava/testkit/context"
 	"github.com/bdpiprava/testkit/internal"
 )
 
-// elasticConfigRoot is the root configuration for the elastic search client
-type elasticConfigRoot struct {
-	ElasticSearch *ElasticSearchConfig `yaml:"elasticsearch"`
-}
-
-// ElasticSearchConfig is the configuration for the elastic search client
-type ElasticSearchConfig struct {
-	Addresses string `yaml:"addresses"`
-	Username  string `yaml:"username"`
-	Password  string `yaml:"password"`
-}
-
-var esClient *elasticsearch.Client
-
-func init() {
-	config, err := internal.ReadConfigAs[elasticConfigRoot]()
-	if err != nil {
-		panic(err)
-	}
-
-	if config.ElasticSearch == nil {
-		return
-	}
-
-	esCfg := elasticsearch.Config{
-		Addresses: strings.Split(config.ElasticSearch.Addresses, ","),
-		Username:  config.ElasticSearch.Username,
-		Password:  config.ElasticSearch.Password,
-	}
-
-	esClient, err = elasticsearch.NewClient(esCfg)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// ElasticSearchSuite is the base test suite for all tests that require an ElasticSearch instance
-type ElasticSearchSuite struct {
-	context.CtxSuite
-	initializer sync.Once
-	indices     map[string][]string
-}
-
 // CreateIndex creates a new index
-func (s *ElasticSearchSuite) CreateIndex(
+func (s *Suite) CreateIndex(
 	index string,
 	numberOfShards,
 	numberOfReplicas int,
 	dynamic bool,
 	properties map[string]any,
 ) error {
-	s.initialiseSuite()
 	s.indices[s.T().Name()] = append(s.indices[s.T().Name()], index)
 
 	propBytes, err := json.Marshal(properties)
@@ -109,8 +61,7 @@ func (s *ElasticSearchSuite) CreateIndex(
 }
 
 // IndexExists checks if the index exists
-func (s *ElasticSearchSuite) IndexExists(name string) bool {
-	s.initialiseSuite()
+func (s *Suite) IndexExists(name string) bool {
 	indices := s.FindIndices(name)
 	for _, index := range indices {
 		if strings.ToLower(index.Name) == strings.ToLower(name) {
@@ -121,16 +72,14 @@ func (s *ElasticSearchSuite) IndexExists(name string) bool {
 }
 
 // CloseIndices closes the indices
-func (s *ElasticSearchSuite) CloseIndices(indices ...string) {
-	s.initialiseSuite()
+func (s *Suite) CloseIndices(indices ...string) {
 	ctx := s.GetContext(s.T().Name())
 	_, err := esClient.Indices.Close(indices, esClient.Indices.Close.WithContext(ctx))
 	s.Require().NoError(err)
 }
 
 // FindIndices returns matching indices sorted by name
-func (s *ElasticSearchSuite) FindIndices(pattern string) Indices {
-	s.initialiseSuite()
+func (s *Suite) FindIndices(pattern string) internal.Indices {
 	ctx := s.GetContext(s.T().Name())
 	resp, err := esClient.Cat.Indices(
 		esClient.Cat.Indices.WithContext(ctx),
@@ -141,7 +90,7 @@ func (s *ElasticSearchSuite) FindIndices(pattern string) Indices {
 	defer closeSilently(resp.Body)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return make(Indices, 0)
+		return make(internal.Indices, 0)
 	}
 
 	if resp.IsError() {
@@ -151,7 +100,7 @@ func (s *ElasticSearchSuite) FindIndices(pattern string) Indices {
 	respBytes, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
 
-	var result Indices
+	var result internal.Indices
 	err = json.Unmarshal(respBytes, &result)
 	s.Require().NoError(err)
 
@@ -163,8 +112,7 @@ func (s *ElasticSearchSuite) FindIndices(pattern string) Indices {
 }
 
 // GetIndexSettings returns the settings for the given index
-func (s *ElasticSearchSuite) GetIndexSettings(index string) IndexSetting {
-	s.initialiseSuite()
+func (s *Suite) GetIndexSettings(index string) internal.IndexSetting {
 	resp, err := esClient.Indices.GetSettings(esClient.Indices.GetSettings.WithIndex(index))
 	s.Require().NoError(err)
 
@@ -173,15 +121,14 @@ func (s *ElasticSearchSuite) GetIndexSettings(index string) IndexSetting {
 	}
 
 	all, _ := io.ReadAll(resp.Body)
-	var data getSettingsResponse
+	var data internal.GetSettingsResponse
 	err = json.Unmarshal(all, &data)
 	s.Require().NoError(err)
 	return data[index].Settings.Index
 }
 
 // DeleteIndices deletes all indices matching the pattern
-func (s *ElasticSearchSuite) DeleteIndices(pattern string) {
-	s.initialiseSuite()
+func (s *Suite) DeleteIndices(pattern string) {
 	indices := s.FindIndices(pattern)
 	if len(indices) == 0 {
 		return
@@ -194,50 +141,20 @@ func (s *ElasticSearchSuite) DeleteIndices(pattern string) {
 	s.Require().NoError(err)
 }
 
-// TearDownTest deletes the indices created during the test
-func (s *ElasticSearchSuite) TearDownTest() {
-	_, err := esClient.Indices.Delete(s.indices[s.T().Name()])
-	s.Require().NoError(err)
+// cleanElasticSearchData cleans the data from the elasticsearch
+func (s *Suite) cleanElasticSearchData() {
+	_, _ = esClient.Indices.Delete(s.indices[s.T().Name()])
 }
 
 // EventuallyBlockStatus waits until the block status is the expected one
-func (s *ElasticSearchSuite) EventuallyBlockStatus(indexName string, status string, timeout, interval time.Duration) {
+func (s *Suite) EventuallyBlockStatus(indexName string, status string, timeout, interval time.Duration) {
 	s.Eventually(s.checkBlockStatusFn(indexName, status), timeout, interval)
 }
 
-func (s *ElasticSearchSuite) checkBlockStatusFn(indexName string, status string) func() bool {
+func (s *Suite) checkBlockStatusFn(indexName string, status string) func() bool {
 	return func() bool {
 		return s.GetIndexSettings(indexName).Blocks.Write == status
 	}
-}
-
-// initialiseSuite initialise the suite
-func (s *ElasticSearchSuite) initialiseSuite() {
-	s.Require().NoError(s.Initialize(s.T().Name()))
-	s.initializer.Do(func() {
-		if s.indices == nil {
-			s.indices = make(map[string][]string)
-		}
-
-		if _, ok := s.indices[s.T().Name()]; !ok {
-			s.indices[s.T().Name()] = make([]string, 0)
-		}
-	})
-
-	ctx := s.GetContext(s.T().Name())
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
-		"test": s.T().Name(),
-		"func": "initialiseSuite",
-	})
-
-	res, err := esClient.Ping()
-	s.Require().NoError(err)
-	if res.IsError() {
-		log.Errorf("Error: %s", res.String())
-		s.FailNowf("Failed to connect to elastic search, received error response %s", res.String())
-	}
-
-	log.Infof("Connection established %s", res.String())
 }
 
 func closeSilently(closable io.Closer) {

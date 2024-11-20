@@ -1,4 +1,4 @@
-package testkit
+package internal
 
 import (
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/bdpiprava/testkit/context"
-	"github.com/bdpiprava/testkit/internal"
 )
 
 const createFromTemplateQuery = `CREATE DATABASE %v WITH TEMPLATE '%v' OWNER ccs`
@@ -19,38 +18,19 @@ const createFromTemplateQuery = `CREATE DATABASE %v WITH TEMPLATE '%v' OWNER ccs
 // ErrMissingGoMigrateConfig ...
 var ErrMissingGoMigrateConfig = errors.New("missing go-migrate config")
 
-// goMigrateConfigRoot config for the go migrate
-type goMigrateConfigRoot struct {
-	GoMigrateConfig *GoMigrateConfig `yaml:"go-migrate"` // GoMigrateConfig config for go migrate
-}
-
-// GoMigrateConfig represent the go migrate config
-type GoMigrateConfig struct {
-	MigrationPath string `yaml:"migration_path"` // MigrationPath path the migration files
-	DatabaseName  string `yaml:"database_name"`  // DatabaseName name of the database
-	IsTemplate    bool   `yaml:"is_template"`    // IsTemplate create database as template
-	Fresh         bool   `yaml:"fresh"`          // Fresh recreate if one already exists
-}
-
-// InitialiseDatabase create a new database if go migrate config is provided
-func InitialiseDatabase() (*sqlx.DB, error) {
+// InitialiseDatabase create a new database when go migrate is configured
+func InitialiseDatabase(config SuiteConfig) (*sqlx.DB, error) {
 	ctx := context.NewContext("go-migrate")
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"func": "InitialiseDatabase",
 	})
 
-	cfgRoot, err := internal.ReadConfigAs[goMigrateConfigRoot]()
-	if err != nil {
-		log.WithError(err).Error("failed to read config")
-		return nil, err
-	}
-
-	if cfgRoot.GoMigrateConfig == nil {
+	if config.GoMigrateConfig == nil {
 		log.Error("missing go-migrate config in the config file")
 		return nil, ErrMissingGoMigrateConfig
 	}
 
-	cfg := cfgRoot.GoMigrateConfig
+	cfg := config.GoMigrateConfig
 	log = log.WithFields(logrus.Fields{
 		"database":       cfg.DatabaseName,
 		"template":       cfg.IsTemplate,
@@ -58,7 +38,7 @@ func InitialiseDatabase() (*sqlx.DB, error) {
 		"fresh":          cfg.Fresh,
 	})
 
-	postgresDB, err := NewPostgresDB()
+	postgresDB, err := NewPostgresDB(config.PostgresConfig)
 	if err != nil {
 		log.WithError(err).Error("go migrate failed as it failed to initialise the postgres helper")
 		return nil, errors.Wrap(err, "go migrate failed")

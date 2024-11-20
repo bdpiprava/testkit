@@ -1,7 +1,8 @@
-package testkit
+package internal
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/jmoiron/sqlx"
@@ -9,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/bdpiprava/testkit/context"
-	"github.com/bdpiprava/testkit/internal"
 )
 
 const (
@@ -20,35 +20,15 @@ const (
 	createDBQuery         = `CREATE DATABASE %v`
 )
 
-// PostgresConfig is the configuration for the postgres database provider
-type PostgresConfig struct {
-	Database     string            `yaml:"name"`          // Database of the database
-	User         string            `yaml:"user"`          // User of the database
-	Password     string            `yaml:"password"`      // Password of the database
-	Host         string            `yaml:"host"`          // Host of the database e.g. localhost:5432
-	QueryParams  map[string]string `yaml:"query_params"`  // QueryParams of the database
-	FromTemplate string            `yaml:"from_template"` // FromTemplate prepare the database from the template
-}
-
-// psqlConfigRoot represents the postgres config root
-type psqlConfigRoot struct {
-	Postgres PostgresConfig `yaml:"postgres"`
-}
-
 // PostgresDB helper to do operation on postgres database
 type PostgresDB struct {
 	config PostgresConfig // PostgresConfig configuration for the postgres database
 }
 
 // NewPostgresDB returns new instance of PostgresDB
-func NewPostgresDB() (*PostgresDB, error) {
-	config, err := internal.ReadConfigAs[psqlConfigRoot]()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read config")
-	}
-
+func NewPostgresDB(config PostgresConfig) (*PostgresDB, error) {
 	return &PostgresDB{
-		config: config.Postgres,
+		config: config,
 	}, nil
 }
 
@@ -74,8 +54,8 @@ func (p *PostgresDB) connect(name string) (*sqlx.DB, error) {
 	return root, nil
 }
 
-// delete deletes a database with the given name
-func (p *PostgresDB) delete(name string) error {
+// Delete deletes a database with the given name
+func (p *PostgresDB) Delete(name string) error {
 	root, err := p.connect(rootDatabase)
 	if err != nil {
 		return err
@@ -103,10 +83,10 @@ func (p *PostgresDB) deleteTemplateDB(name string) error {
 	return err
 }
 
-// createDatabase creates a new target database from the template database
-func (p *PostgresDB) createDatabase(ctx context.Context, targetName string) (*sqlx.DB, error) {
+// CreateDatabase creates a new target database from the template database
+func (p *PostgresDB) CreateDatabase(ctx context.Context, targetName string) (*sqlx.DB, error) {
 	log := context.GetLogger(ctx).WithFields(logrus.Fields{
-		"func":     "createDatabase",
+		"func":     "CreateDatabase",
 		"target":   targetName,
 		"template": p.config.FromTemplate,
 	})
@@ -163,4 +143,8 @@ func (p *PostgresConfig) DSN(name string) string {
 	}
 	dsn.RawQuery = params.Encode()
 	return dsn.String()
+}
+
+func closeSilently(closable io.Closer) {
+	_ = closable.Close()
 }

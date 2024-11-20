@@ -11,7 +11,7 @@ import (
 )
 
 type KafkaTestSuiteTest struct {
-	testkit.KafkaSuite
+	testkit.Suite
 }
 
 func TestKafkaTestSuiteTest(t *testing.T) {

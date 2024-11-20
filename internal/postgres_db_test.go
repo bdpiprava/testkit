@@ -1,20 +1,20 @@
-package testkit_test
+package internal_test
 
 import (
 	"testing"
 
-	"github.com/bdpiprava/testkit"
+	"github.com/bdpiprava/testkit/internal"
 )
 
 func TestConfig_BuildConnectionString(t *testing.T) {
 	testCases := []struct {
 		name   string
-		config testkit.PostgresConfig
+		config internal.PostgresConfig
 		want   string
 	}{
 		{
 			name: "should build connection string with default values",
-			config: testkit.PostgresConfig{
+			config: internal.PostgresConfig{
 				Database: "postgres",
 				Host:     "localhost",
 				User:     "postgres",
@@ -28,7 +28,7 @@ func TestConfig_BuildConnectionString(t *testing.T) {
 		},
 		{
 			name: "should build connection string with host and port",
-			config: testkit.PostgresConfig{
+			config: internal.PostgresConfig{
 				Database: "xyz",
 				Host:     "localhost:5432",
 				User:     "postgres",

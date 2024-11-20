@@ -107,3 +107,69 @@ This is the configuration for the APIMock server. It uses wiremock to mock the A
 | Field   | Description                     |
 |---------|---------------------------------|
 | address | Address of the wiremock server. |
+
+## Usage
+
+The `testkit` library provides a `Suite` struct that can be embedded in the test suite struct. The `Suite` struct
+provides
+the following methods to set up and tear down the resources:
+
+### PostgreSQL Helper Methods
+
+- **RequiresPostgresDatabase** - Sets up a PostgreSQL database and returns a `*sqlx.DB` connection.
+
+### Kafka Helper Methods
+
+- **RequiresKafka** - Sets up a Kafka cluster and returns the server address.
+- **Produce** - Produces a message to the Kafka topic.
+- **Consume** - Consumes a message from the Kafka topic on message read callback function is called. Return `true` from
+  callback function to stop consuming messages.
+
+### Elasticsearch Helper Methods
+
+- **CreateIndex** - Creates an Elasticsearch index with the given name and other params.
+- **DeleteIndex** - Deletes the Elasticsearch index.
+- **IndexExists** - Checks if the Elasticsearch index exists.
+- **CloseIndices** - Closes the Elasticsearch indices.
+- **FindIndices** - Finds the Elasticsearch indices.
+- **GetIndexSettings** - Gets the settings of the Elasticsearch index.
+- **EventuallyBlockStatus** - Checks the index block for the given index.
+
+### APIMock Helper Methods
+
+- **SetupAPIMocksFromFile** - Sets up the services mock from a file and returns the URLs. It takes the file path and a 
+  map of dynamic parameters as parameters to replace the template values in the file.
+
+
+### Example
+
+```go
+package example_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/suite"
+
+	"github.com/bdpiprava/testkit"
+)
+
+type ExampleTestSuite struct {
+	testkit.Suite
+}
+
+func TestDatabaseIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(ExampleTestSuite))
+}
+
+func (s *ExampleTestSuite) TestSuite_ExampleTest() {
+	db := s.RequiresPostgresDatabase("test")
+
+	var version string
+	err := db.Get(&version, "SELECT VERSION()")
+	s.Require().NoError(err)
+
+	s.Require().NotEmpty(version)
+	s.Contains(version, "PostgreSQL")
+}
+```

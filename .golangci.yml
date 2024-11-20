@@ -33,6 +33,11 @@ linters:
     - whitespace
 run:
   timeout: 10m
+
+linters-settings:
+  lll:
+    line-length: 140
+
 output:
   print-linter-name: true
   show-stats: true

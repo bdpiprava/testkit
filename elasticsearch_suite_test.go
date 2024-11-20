@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/bdpiprava/testkit"
+	"github.com/bdpiprava/testkit/internal"
 )
 
 var exampleMappings = func() map[string]any {
@@ -24,7 +25,7 @@ var exampleMappings = func() map[string]any {
 }
 
 type ElasticSearchSuiteTest struct {
-	testkit.ElasticSearchSuite
+	testkit.Suite
 }
 
 func TestElasticSearchSuiteTest(t *testing.T) {
@@ -73,12 +74,12 @@ func (s *ElasticSearchSuiteTest) Test_GetIndexSettings() {
 
 func (s *ElasticSearchSuiteTest) Test_FindIndices() {
 	s.DeleteIndices("*_test_*")
-	expectedIndices := make(testkit.Indices, 0, 2)
+	expectedIndices := make(internal.Indices, 0, 2)
 	randomNumber := time.Now().Unix()
 	for i := range 2 {
 		indexName := fmt.Sprintf("%d_test_%d", randomNumber, randomNumber+int64(i))
 		s.Require().NoError(s.CreateIndex(indexName, 1, 1, false, exampleMappings()))
-		expectedIndices = append(expectedIndices, testkit.Index{
+		expectedIndices = append(expectedIndices, internal.Index{
 			Name:         indexName,
 			Pri:          "1",
 			Rep:          "1",
@@ -96,5 +97,5 @@ func (s *ElasticSearchSuiteTest) Test_FindIndices() {
 
 	// Then
 	s.Len(indices, 2)
-	s.True(cmp.Equal(expectedIndices, indices, cmpopts.IgnoreFields(testkit.Index{}, "UUID")))
+	s.True(cmp.Equal(expectedIndices, indices, cmpopts.IgnoreFields(internal.Index{}, "UUID")))
 }
