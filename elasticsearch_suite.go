@@ -143,6 +143,10 @@ func (s *Suite) DeleteIndices(pattern string) {
 
 // cleanElasticSearchData cleans the data from the elasticsearch
 func (s *Suite) cleanElasticSearchData() {
+	if esClient == nil {
+		return
+	}
+
 	_, _ = esClient.Indices.Delete(s.indices[s.T().Name()])
 }
 
@@ -158,5 +162,7 @@ func (s *Suite) checkBlockStatusFn(indexName string, status string) func() bool 
 }
 
 func closeSilently(closable io.Closer) {
-	_ = closable.Close()
+	if closable != nil {
+		_ = closable.Close()
+	}
 }

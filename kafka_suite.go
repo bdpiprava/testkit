@@ -150,7 +150,7 @@ func (s *Suite) cleanKafkaResources() {
 		closeSilently(c)
 	}
 
-	for _, s := range s.kafkaServers {
-		s.Close()
+	for _, server := range s.kafkaServers {
+		server.Close()
 	}
 }
