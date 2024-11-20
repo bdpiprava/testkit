@@ -6,6 +6,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wiremock/go-wiremock"
@@ -15,6 +16,7 @@ import (
 )
 
 var esClient *elasticsearch.Client
+var osClient *opensearch.Client
 var wiremockAddress = "http://localhost:8080"
 var wiremockClient *wiremock.Client
 var suiteConfig internal.SuiteConfig
@@ -27,7 +29,10 @@ type Suite struct {
 	postgresDB *internal.PostgresDB
 
 	// Used by elasticsearch_suite.go
-	indices map[string][]string
+	esIndices map[string][]string
+
+	// Used by opensearch_suite.go
+	osIndices map[string][]string
 
 	// Used by kafka_suite.go
 	kafkaServers   map[string]*kafka.MockCluster
@@ -43,12 +48,20 @@ func (s *Suite) SetupSuite() {
 		s.kafkaServers = make(map[string]*kafka.MockCluster)
 		s.kafkaConsumers = make([]*kafka.Consumer, 0)
 
-		if s.indices == nil {
-			s.indices = make(map[string][]string)
+		if s.esIndices == nil {
+			s.esIndices = make(map[string][]string)
 		}
 
-		if _, ok := s.indices[s.T().Name()]; !ok {
-			s.indices[s.T().Name()] = make([]string, 0)
+		if s.osIndices == nil {
+			s.osIndices = make(map[string][]string)
+		}
+
+		if _, ok := s.esIndices[s.T().Name()]; !ok {
+			s.esIndices[s.T().Name()] = make([]string, 0)
+		}
+
+		if _, ok := s.osIndices[s.T().Name()]; !ok {
+			s.osIndices[s.T().Name()] = make([]string, 0)
 		}
 
 		ctx := s.GetContext()
@@ -64,9 +77,19 @@ func (s *Suite) SetupSuite() {
 			s.Require().NoError(err)
 			if res.IsError() {
 				log.Errorf("Error: %s", res.String())
-				s.FailNowf("Failed to connect to elastic search, received error response %s", res.String())
+				s.T().Fatalf("[ElasticSearch] Failed to connect, received error response %s", res.String())
 			}
-			log.Infof("Connection established %s", res.String())
+			log.Infof("[ElasticSearch] Connection established %s", res.String())
+		}
+
+		if osClient != nil {
+			res, err := osClient.Ping()
+			s.Require().NoError(err)
+			if res.IsError() {
+				log.Errorf("Error: %s", res.String())
+				s.T().Fatalf("[OpenSearch] Failed to connect, received error response %s", res.String())
+			}
+			log.Infof("[OpenSearch] Connection established %s", res.String())
 		}
 	})
 }
@@ -75,7 +98,8 @@ func (s *Suite) SetupSuite() {
 func (s *Suite) TearDownSuite() {
 	defer s.cleanDatabase()
 	defer s.cleanKafkaResources()
-	defer s.cleanElasticSearchData()
+	defer s.elasticSearchCleanData()
+	defer s.openSearchCleanData()
 }
 
 func init() {
@@ -95,6 +119,18 @@ func init() {
 			Addresses: strings.Split(config.ElasticSearch.Addresses, ","),
 			Username:  config.ElasticSearch.Username,
 			Password:  config.ElasticSearch.Password,
+		})
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if config.OpenSearch != nil {
+		osClient, err = opensearch.NewClient(opensearch.Config{
+			Addresses: strings.Split(config.OpenSearch.Addresses, ","),
+			Username:  config.OpenSearch.Username,
+			Password:  config.OpenSearch.Password,
 		})
 
 		if err != nil {

@@ -45,11 +45,10 @@ func (s *CtxSuite) GetContext() *Context {
 		"test": name,
 	})
 
-	log.Trace("Start")
 	if ctx, ok := s.ctxMap[name]; ok {
-		log.Trace("Found context, returning")
 		return ctx
 	}
+
 	log.Trace("Creating new context")
 	ctx := NewContext(name)
 	s.ctxMap[name] = ctx

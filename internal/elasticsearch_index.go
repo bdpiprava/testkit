@@ -16,3 +16,21 @@ type Index struct {
 
 // Indices represents the list of index
 type Indices []Index
+
+// QueryResponse represents the response from elasticsearch or opensearch
+type QueryResponse struct {
+	Hits Hits `json:"hits"`
+}
+
+// Hits represents the hits from the response
+type Hits struct {
+	Hits []Hit `json:"hits"`
+}
+
+// Hit represents the hit from the response
+type Hit struct {
+	Index  string         `json:"_index"`
+	ID     string         `json:"_id"`
+	Score  float64        `json:"_score"`
+	Source map[string]any `json:"_source"`
+}

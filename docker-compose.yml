@@ -32,6 +32,16 @@ services:
       timeout: 10s
       retries: 120
 
+  opensearch:
+    container_name: testkit-os
+    image: opensearchproject/opensearch:2.7.0
+    ports:
+      - "9202:9202"
+    environment: # USER: admin PASSWORD: admin
+      - "discovery.type=single-node"
+      - "plugins.security.ssl.http.enabled=false"
+      - "http.port=9202"
+
   api_mock:
     container_name: testkit-api-mock
     image: wiremock/wiremock:latest

@@ -16,5 +16,10 @@ elasticsearch:
   username: testkit
   password: badger
 
+opensearch:
+  addresses: http://localhost:9202 # comma separated list of addresses
+  username: admin
+  password: admin
+
 api-mock:
   address: http://localhost:8181

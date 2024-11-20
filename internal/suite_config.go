@@ -5,6 +5,7 @@ type SuiteConfig struct {
 	LogLevel        string               `yaml:"log_level"`     // LogLevel is the log level
 	PostgresConfig  PostgresConfig       `yaml:"postgres"`      // PostgresConfig configuration for the postgres database
 	ElasticSearch   *ElasticSearchConfig `yaml:"elasticsearch"` // ElasticSearchConfig configuration for the elastic search client
+	OpenSearch      *ElasticSearchConfig `yaml:"opensearch"`    // OpenSearch configuration for the elastic search client
 	GoMigrateConfig *GoMigrateConfig     `yaml:"go-migrate"`    // GoMigrateConfig config for go migrate
 	APIMockConfig   *APIMockConfig       `yaml:"api-mock"`      // APIMockConfig configuration for the API mock
 }

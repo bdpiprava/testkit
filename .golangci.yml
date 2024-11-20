@@ -14,7 +14,6 @@ linters:
     - godox
     - gofmt
     - goimports
-    - mnd
     - goprintffuncname
     - gosec
     - intrange
