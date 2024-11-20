@@ -49,8 +49,8 @@ type APIMockSuite struct {
 	suite.Suite
 }
 
-// FromFile set up the services mock from a file and return the URLs
-func (s *APIMockSuite) FromFile(file string, dynamicParams map[string]string) map[string]string {
+// SetupAPIMocksFromFile set up the services mock from a file and return the URLs
+func (s *APIMockSuite) SetupAPIMocksFromFile(file string, dynamicParams map[string]string) map[string]string {
 	root, err := readFile(file)
 	s.Require().NoError(err)
 

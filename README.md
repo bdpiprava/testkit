@@ -13,6 +13,12 @@ following:
 - Go (version 1.16 or later)
 - PostgreSQL
 
+## Installation
+
+```shell
+go get github.com/bdpiprava/testkit@latest
+```
+
 ## Configuration
 
 The project uses a configuration file `.testkit.config.yml` to set up the PostgreSQL connection and logging level.
@@ -44,6 +50,10 @@ elasticsearch:
   addresses: http://localhost:9200 # comma separated list of addresses
   username: testkit
   password: badger
+
+# APIMock configuration
+api-mock:
+  address: http://localhost:8080
 ```
 
 ### Configuration Fields
@@ -89,3 +99,11 @@ This is the configuration for the Elasticsearch connection.
 | addresses | Comma separated list of Elasticsearch addresses. |
 | username  | Elasticsearch username.                          |
 | password  | Elasticsearch password.                          |
+
+#### APIMock Configuration Fields
+
+This is the configuration for the APIMock server. It uses wiremock to mock the API responses.
+
+| Field   | Description                     |
+|---------|---------------------------------|
+| address | Address of the wiremock server. |

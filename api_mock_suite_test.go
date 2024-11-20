@@ -17,7 +17,7 @@ func TestAPIMockSuiteTestSuite(t *testing.T) {
 }
 
 func (s *APIMockSuiteTestSuite) TestFromFile() {
-	serviceURLs := s.FromFile("internal/testdata/test-data.yaml", map[string]string{
+	serviceURLs := s.SetupAPIMocksFromFile("internal/testdata/test-data.yaml", map[string]string{
 		"limit": "10",
 	})
 	s.Require().Len(serviceURLs, 2)
