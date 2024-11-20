@@ -21,14 +21,14 @@ import (
 
 // elasticConfigRoot is the root configuration for the elastic search client
 type elasticConfigRoot struct {
-	ElasticSearch *ElasticSearchConfig `json:"elasticsearch"`
+	ElasticSearch *ElasticSearchConfig `yaml:"elasticsearch"`
 }
 
 // ElasticSearchConfig is the configuration for the elastic search client
 type ElasticSearchConfig struct {
-	Addresses string `json:"addresses"`
-	Username  string `json:"username"`
-	Password  string `json:"password"`
+	Addresses string `yaml:"addresses"`
+	Username  string `yaml:"username"`
+	Password  string `yaml:"password"`
 }
 
 var esClient *elasticsearch.Client

@@ -1,0 +1,34 @@
+---
+example-service-1:
+  - request:
+      method: GET
+      path: /api/v1/example
+      headers:
+        Authorization: "Bearer abcd"
+        Content-Type: "application/json"
+      queryParams:
+        page: 1
+        limit: "{{limit}}"
+    response:
+      status: 200
+      headers:
+        Content-Type: "application/json"
+      body: |
+        {
+          "message": "Hello, World!"
+        }
+example-service-2:
+  - request:
+      method: GET
+      path: /api/v1/example
+      headers:
+        Authorization: "Bearer abcd"
+        Content-Type: "application/json"
+      response:
+        status: 200
+        headers:
+          Content-Type: "application/json"
+        body: |
+          {
+            "message": "Hello, World!"
+          }

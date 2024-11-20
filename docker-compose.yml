@@ -31,3 +31,9 @@ services:
       interval: 5s
       timeout: 10s
       retries: 120
+
+  api_mock:
+    container_name: testkit-api-mock
+    image: wiremock/wiremock:latest
+    ports:
+      - "8181:8080"
