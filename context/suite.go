@@ -49,6 +49,10 @@ func (s *CtxSuite) GetContext() *Context {
 		return ctx
 	}
 
+	if s.ctxMap == nil {
+		s.ctxMap = make(map[string]*Context)
+	}
+
 	log.Trace("Creating new context")
 	ctx := NewContext(name)
 	s.ctxMap[name] = ctx
