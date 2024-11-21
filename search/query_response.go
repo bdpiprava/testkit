@@ -1,4 +1,4 @@
-package internal
+package search
 
 // Index represents the index on elasticsearch
 type Index struct {

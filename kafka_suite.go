@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/bdpiprava/testkit/context"
+	"github.com/bdpiprava/testkit/kitkafka"
 )
 
 const pollTimeout = 10 * time.Second
@@ -45,12 +46,22 @@ func (s *Suite) RequiresKafka(topics ...string) string {
 
 // Produce a message to the kafka topic
 func (s *Suite) Produce(topic string, key, value []byte, headers ...kafka.Header) {
+	s.ProduceMessage(kitkafka.Message{
+		Topic:   topic,
+		Key:     key,
+		Value:   value,
+		Headers: headers,
+	})
+}
+
+// ProduceMessage produce a message to kafka cluster
+func (s *Suite) ProduceMessage(message kitkafka.Message) {
 	ctx := s.GetContext()
 	servers := s.getCluster().BootstrapServers()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"test":   s.T().Name(),
 		"func":   "Produce",
-		"topic":  topic,
+		"topic":  message.Topic,
 		"server": servers,
 	})
 
@@ -63,12 +74,14 @@ func (s *Suite) Produce(topic string, key, value []byte, headers ...kafka.Header
 	deliveryChan := make(chan kafka.Event)
 	err = producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
-			Topic:     &topic,
+			Topic:     &message.Topic,
 			Partition: kafka.PartitionAny,
 		},
-		Headers: headers,
-		Key:     key,
-		Value:   value,
+		Headers:       message.Headers,
+		Key:           message.Key,
+		Value:         message.Value,
+		Timestamp:     message.Timestamp,
+		TimestampType: message.TimestampType,
 	}, deliveryChan)
 	s.Require().NoError(err)
 

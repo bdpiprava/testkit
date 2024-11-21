@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/bdpiprava/testkit"
-	"github.com/bdpiprava/testkit/internal"
+	"github.com/bdpiprava/testkit/search"
 )
 
 type OpenSearchSuiteTest struct {
@@ -67,12 +67,12 @@ func (s *OpenSearchSuiteTest) Test_GetIndexSettings() {
 
 func (s *OpenSearchSuiteTest) Test_FindIndices() {
 	s.OpenSearchDeleteIndices("*_test_find_indices_*")
-	expectedIndices := make(internal.Indices, 0, 2)
+	expectedIndices := make(search.Indices, 0, 2)
 	randomNumber := time.Now().Unix()
 	for i := range 2 {
 		indexName := fmt.Sprintf("%d_test_find_indices_%d", randomNumber, randomNumber+int64(i))
 		s.Require().NoError(s.OpenSearchCreateIndex(indexName, 1, 1, false, exampleMappings()))
-		expectedIndices = append(expectedIndices, internal.Index{
+		expectedIndices = append(expectedIndices, search.Index{
 			Name:         indexName,
 			Pri:          "1",
 			Rep:          "1",
@@ -89,7 +89,7 @@ func (s *OpenSearchSuiteTest) Test_FindIndices() {
 	indices := s.OpenSearchFindIndices("*_test_find_indices_*")
 
 	// Then
-	s.True(cmp.Equal(expectedIndices, indices, cmpopts.IgnoreFields(internal.Index{}, "UUID")))
+	s.True(cmp.Equal(expectedIndices, indices, cmpopts.IgnoreFields(search.Index{}, "UUID")))
 }
 
 func (s *OpenSearchSuiteTest) Test_OpenSearchSearchByQuery() {

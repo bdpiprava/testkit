@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/bdpiprava/testkit/context"
-	"github.com/bdpiprava/testkit/internal"
+	"github.com/bdpiprava/testkit/search"
 )
 
 // RequireOpenSearchClient returns the opensearch client
@@ -74,7 +74,7 @@ func (s *Suite) OpenSearchCloseIndices(indices ...string) {
 }
 
 // OpenSearchFindIndices returns matching opensearch indices sorted by name
-func (s *Suite) OpenSearchFindIndices(pattern string) internal.Indices {
+func (s *Suite) OpenSearchFindIndices(pattern string) search.Indices {
 	ctx := s.GetContext()
 	resp, err := osClient.Cat.Indices(
 		osClient.Cat.Indices.WithContext(ctx),
@@ -84,7 +84,7 @@ func (s *Suite) OpenSearchFindIndices(pattern string) internal.Indices {
 	s.Require().NoError(err)
 	defer closeSilently(resp.Body)
 
-	result, err := parseElasticSearchResponse[internal.Indices](resp.StatusCode, resp.Body)
+	result, err := parseElasticSearchResponse[search.Indices](resp.StatusCode, resp.Body)
 	s.Require().NoError(err, "failed to find indices")
 
 	sort.Slice(result, func(i, j int) bool {
@@ -95,7 +95,7 @@ func (s *Suite) OpenSearchFindIndices(pattern string) internal.Indices {
 }
 
 // OpenSearchGetIndexSettings returns the settings for the given index
-func (s *Suite) OpenSearchGetIndexSettings(index string) internal.IndexSetting {
+func (s *Suite) OpenSearchGetIndexSettings(index string) search.IndexSetting {
 	resp, err := osClient.Indices.GetSettings(osClient.Indices.GetSettings.WithIndex(index))
 	s.Require().NoError(err)
 	defer closeSilently(resp.Body)
@@ -105,7 +105,7 @@ func (s *Suite) OpenSearchGetIndexSettings(index string) internal.IndexSetting {
 	}
 
 	all, _ := io.ReadAll(resp.Body)
-	var data internal.GetSettingsResponse
+	var data search.GetSettingsResponse
 	err = json.Unmarshal(all, &data)
 	s.Require().NoError(err)
 	return data[index].Settings.Index
@@ -128,21 +128,20 @@ func (s *Suite) OpenSearchDeleteByQuery(query string, indices ...string) {
 	s.Require().NoError(err)
 	defer closeSilently(resp.Body)
 
-	result, err := parseElasticSearchResponse[internal.QueryResponse](resp.StatusCode, resp.Body)
+	result, err := parseElasticSearchResponse[search.QueryResponse](resp.StatusCode, resp.Body)
 	s.Require().NoError(err, "failed to delete by query")
 
 	log.Infof("deleted %d documents", len(result.Hits.Hits))
 }
 
 // OpenSearchSearchByQuery searches for documents matching the provided query.
-func (s *Suite) OpenSearchSearchByQuery(query string, index string) internal.QueryResponse {
+func (s *Suite) OpenSearchSearchByQuery(query string, index string) search.QueryResponse {
 	ctx := s.GetContext()
 	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
 		"query": query,
 		"index": index,
 	})
 
-	log.Info("deleting by query")
 	resp, err := osClient.Search(
 		osClient.Search.WithIndex(index),
 		osClient.Search.WithBody(strings.NewReader(query)),
@@ -150,7 +149,7 @@ func (s *Suite) OpenSearchSearchByQuery(query string, index string) internal.Que
 	s.Require().NoError(err)
 	defer closeSilently(resp.Body)
 
-	result, err := parseElasticSearchResponse[internal.QueryResponse](resp.StatusCode, resp.Body)
+	result, err := parseElasticSearchResponse[search.QueryResponse](resp.StatusCode, resp.Body)
 	s.Require().NoError(err, "failed to search by query")
 
 	log.Infof("found %d documents", len(result.Hits.Hits))

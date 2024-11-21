@@ -1,4 +1,4 @@
-package internal
+package search
 
 // IndexSetting represents the index settings
 type IndexSetting struct {
