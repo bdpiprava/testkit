@@ -2,62 +2,73 @@ package testkit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/bdpiprava/testkit/search"
 )
 
-const createIndexBodyTemplate = `{
-	"settings": {
-		"index": {
-			"number_of_shards": %d,
-			"number_of_replicas": %d
-		}
-	},
-	"mappings": {
-		"dynamic": %t,
-		"properties": %s
-	}
-}`
+// SearchClient is the interface for the search client
+type SearchClient interface {
+	// CreateIndex creates a new index
+	CreateIndex(index string, settings search.CreateIndexSettings) error
+	// CloseIndices closes the indices
+	CloseIndices(indices ...string)
+	// IndexExists checks if the index exists
+	IndexExists(name string) (bool, error)
+	// FindIndices returns matching esIndices sorted by name
+	FindIndices(pattern string) (search.Indices, error)
+	// GetIndexSettings returns the settings for the given index
+	GetIndexSettings(index string) (search.IndexSetting, error)
+	// DeleteIndices deletes all esIndices matching the pattern
+	DeleteIndices(pattern string) error
+	// DeleteByQuery deletes documents matching the provided query.
+	DeleteByQuery(indices []string, query string) error
+	// SearchByQuery searches for documents matching the provided query.
+	SearchByQuery(index string, query string) (search.QueryResponse, error)
+	// CreateDocument creates a new document in the provided index
+	CreateDocument(index string, document map[string]any) error
+}
 
-// RequireElasticSearchClient returns the elasticsearch client
-func (s *Suite) RequireElasticSearchClient() *elasticsearch.Client {
+// ElasticSearch is a wrapper around the elasticsearch client
+type elasticSearch struct {
+	client *elasticsearch.Client
+	log    logrus.FieldLogger
+}
+
+// RequireElasticSearch returns the elasticsearch client
+func (s *Suite) RequireElasticSearch() SearchClient {
 	if esClient == nil {
 		s.T().Fatalf("elasticsearch client is not initialized")
 	}
-	return esClient
+	return &elasticSearch{
+		client: esClient,
+		log:    s.Logger(),
+	}
 }
 
-// ElasticSearchCreateIndex creates a new index
-func (s *Suite) ElasticSearchCreateIndex(
-	index string,
-	numberOfShards,
-	numberOfReplicas int,
-	dynamic bool,
-	properties map[string]any,
-) error {
-	s.esIndices[s.T().Name()] = append(s.esIndices[s.T().Name()], index)
-
-	propBytes, err := json.Marshal(properties)
-	s.Require().NoError(err)
-	bb := []byte(fmt.Sprintf(createIndexBodyTemplate, numberOfShards, numberOfReplicas, dynamic, string(propBytes)))
-
+// CreateIndex creates a new index
+func (s *elasticSearch) CreateIndex(index string, settings search.CreateIndexSettings) error {
+	bb, err := settings.GetBody()
+	if err != nil {
+		return err
+	}
 	req := esapi.IndicesCreateRequest{
 		Index: index,
-		Body:  bytes.NewReader(bb),
+		Body:  bytes.NewReader([]byte(bb)),
 	}
 
-	ctx := s.GetContext()
+	ctx := context.Background()
 	resp, err := req.Do(ctx, esClient)
 	if err != nil {
 		return err
@@ -71,166 +82,149 @@ func (s *Suite) ElasticSearchCreateIndex(
 	return nil
 }
 
-// ElasticSearchIndexExists checks if the index exists
-func (s *Suite) ElasticSearchIndexExists(name string) bool {
-	indices := s.ElasticSearchFindIndices(name)
+// CloseIndices closes the indices
+func (s *elasticSearch) CloseIndices(indices ...string) {
+	_, _ = esClient.Indices.Close(indices)
+}
+
+// IndexExists checks if the index exists
+func (s *elasticSearch) IndexExists(name string) (bool, error) {
+	indices, err := s.FindIndices(name)
+	if err != nil {
+		return false, err
+	}
+
 	for _, index := range indices {
 		if strings.ToLower(index.Name) == strings.ToLower(name) {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
-// ElasticSearchCloseIndices closes the esIndices
-func (s *Suite) ElasticSearchCloseIndices(indices ...string) {
-	ctx := s.GetContext()
-	_, err := esClient.Indices.Close(indices, esClient.Indices.Close.WithContext(ctx))
-	s.Require().NoError(err)
-}
-
-// ElasticSearchFindIndices returns matching esIndices sorted by name
-func (s *Suite) ElasticSearchFindIndices(pattern string) search.Indices {
-	ctx := s.GetContext()
+// FindIndices returns matching esIndices sorted by name
+func (s *elasticSearch) FindIndices(pattern string) (search.Indices, error) {
 	resp, err := esClient.Cat.Indices(
-		esClient.Cat.Indices.WithContext(ctx),
+		esClient.Cat.Indices.WithContext(context.Background()),
 		esClient.Cat.Indices.WithIndex(pattern),
 		esClient.Cat.Indices.WithFormat("json"),
 	)
-	s.Require().NoError(err)
+	if err != nil {
+		return nil, err
+	}
 	defer closeSilently(resp.Body)
 
 	result, err := parseElasticSearchResponse[search.Indices](resp.StatusCode, resp.Body)
-	s.Require().NoError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
-
-	return result
+	return result, nil
 }
 
-// ElasticSearchGetIndexSettings returns the settings for the given index
-func (s *Suite) ElasticSearchGetIndexSettings(index string) search.IndexSetting {
-	resp, err := esClient.Indices.GetSettings(esClient.Indices.GetSettings.WithIndex(index))
-	s.Require().NoError(err)
+// GetIndexSettings returns the settings for the given index
+func (s *elasticSearch) GetIndexSettings(index string) (search.IndexSetting, error) {
+	resp, err := esClient.Indices.GetSettings(
+		esClient.Indices.GetSettings.WithIndex(index),
+	)
+	if err != nil {
+		return search.IndexSetting{}, err
+	}
+	defer closeSilently(resp.Body)
 
-	if resp.IsError() {
-		s.T().Fatalf("failed to get index settings: %v", resp)
+	result, err := parseElasticSearchResponse[search.GetSettingsResponse](resp.StatusCode, resp.Body)
+	if err != nil {
+		return search.IndexSetting{}, err
+	}
+	return result[index].Settings.Index, nil
+}
+
+// DeleteIndices deletes all esIndices matching the pattern
+func (s *elasticSearch) DeleteIndices(pattern string) error {
+	indices, err := s.FindIndices(pattern)
+	if err != nil {
+		return err
 	}
 
-	all, _ := io.ReadAll(resp.Body)
-	var data search.GetSettingsResponse
-	err = json.Unmarshal(all, &data)
-	s.Require().NoError(err)
-	return data[index].Settings.Index
-}
-
-// ElasticSearchDeleteIndices deletes all esIndices matching the pattern
-func (s *Suite) ElasticSearchDeleteIndices(pattern string) {
-	indices := s.ElasticSearchFindIndices(pattern)
 	if len(indices) == 0 {
-		return
+		return nil
 	}
+
 	list := make([]string, 0, len(indices))
 	for _, index := range indices {
 		list = append(list, index.Name)
 	}
-	_, err := esClient.Indices.Delete(list)
-	s.Require().NoError(err)
+	_, err = esClient.Indices.Delete(list)
+	return err
 }
 
-// elasticSearchCleanData cleans the data from the elasticsearch
-func (s *Suite) elasticSearchCleanData() {
-	if esClient == nil {
-		return
+// DeleteByQuery deletes documents matching the provided query.
+func (s *elasticSearch) DeleteByQuery(indices []string, query string) error {
+	resp, err := esClient.DeleteByQuery(indices, strings.NewReader(query))
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete by query")
 	}
-
-	_, _ = esClient.Indices.Delete(s.esIndices[s.T().Name()])
-}
-
-// ElasticSearchEventuallyBlockStatus waits until the block status is the expected one
-func (s *Suite) ElasticSearchEventuallyBlockStatus(
-	indexName string,
-	status string,
-	timeout,
-	interval time.Duration,
-) {
-	s.Eventually(s.checkBlockStatusFn(indexName, status), timeout, interval)
-}
-
-// ElasticSearchDeleteByQuery deletes documents matching the provided query.
-func (s *Suite) ElasticSearchDeleteByQuery(query string, indices ...string) {
-	ctx := s.GetContext()
-	log := s.Logger().WithFields(logrus.Fields{
-		"query":   query,
-		"indices": indices,
-	})
-
-	log.Info("deleting by query")
-	resp, err := esClient.DeleteByQuery(
-		indices,
-		strings.NewReader(query),
-		esClient.DeleteByQuery.WithContext(ctx),
-	)
-	s.Require().NoError(err)
 	defer closeSilently(resp.Body)
 
 	result, err := parseElasticSearchResponse[search.QueryResponse](resp.StatusCode, resp.Body)
-	s.Require().NoError(err, "failed to delete by query")
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete by query: %s", resp.String())
+	}
 
-	log.Infof("deleted %d documents", len(result.Hits.Hits))
+	s.log.Infof("deleted document count: %d", len(result.Hits.Hits))
+	return nil
 }
 
-// ElasticSearchSearchByQuery searches for documents matching the provided query.
-func (s *Suite) ElasticSearchSearchByQuery(query string, index string) search.QueryResponse {
-	log := s.Logger().WithFields(logrus.Fields{
-		"query": query,
-		"index": index,
-	})
-
+// SearchByQuery searches for documents matching the provided query.
+func (s *elasticSearch) SearchByQuery(index string, query string) (search.QueryResponse, error) {
+	var result search.QueryResponse
 	resp, err := esClient.Search(
 		esClient.Search.WithIndex(index),
 		esClient.Search.WithBody(strings.NewReader(query)),
 	)
-	s.Require().NoError(err)
+	if err != nil {
+		return result, errors.Wrapf(err, "failed to search by query")
+	}
 	defer closeSilently(resp.Body)
 
-	result, err := parseElasticSearchResponse[search.QueryResponse](resp.StatusCode, resp.Body)
-	s.Require().NoError(err, "failed to search by query")
+	result, err = parseElasticSearchResponse[search.QueryResponse](resp.StatusCode, resp.Body)
+	if err != nil {
+		return result, errors.Wrapf(err, "failed to search by query: %s", resp.String())
+	}
 
-	log.Infof("found %d documents", len(result.Hits.Hits))
-	return result
+	s.log.Infof("found %d documents", len(result.Hits.Hits))
+	return result, nil
 }
 
-// ElasticSearchSearchCreateDocument creates a new document in the provided index
-func (s *Suite) ElasticSearchSearchCreateDocument(index string, document map[string]any) {
-	ctx := s.GetContext()
-	log := s.Logger().WithFields(logrus.Fields{
+// CreateDocument creates a new document in the provided index
+func (s *elasticSearch) CreateDocument(index string, document map[string]any) error {
+	log := s.log.WithFields(logrus.Fields{
 		"index": index,
 	})
 
-	log.Info("creating document")
+	log.Debug("marshalling document content")
 	content, err := json.Marshal(document)
-	s.Require().NoError(err)
+	if err != nil {
+		return err
+	}
 
+	log.Debug("creating document")
 	resp, err := esClient.Index(
 		index,
 		bytes.NewReader(content),
-		esClient.Index.WithContext(ctx),
 	)
-	s.Require().NoError(err)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create document")
+	}
 	defer closeSilently(resp.Body)
 
 	if resp.IsError() {
-		s.T().Fatalf("failed to create document: %v", resp)
+		return errors.Errorf("failed to create document: %v", resp.String())
 	}
+	log.Debugf("document created")
 
-	log.Info("document created")
-}
-
-func (s *Suite) checkBlockStatusFn(indexName string, status string) func() bool {
-	return func() bool {
-		return s.ElasticSearchGetIndexSettings(indexName).Blocks.Write == status
-	}
+	return nil
 }
 
 func closeSilently(closable io.Closer) {

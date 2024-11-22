@@ -22,11 +22,14 @@ func Run(t *testing.T, suite TestingSuite) {
 	var suiteSetupDone bool
 	tests := make([]testing.InternalTest, 0)
 	methodFinder := reflect.TypeOf(suite)
-	for i := 0; i < methodFinder.NumMethod(); i++ {
+	for i := range methodFinder.NumMethod() {
 		method := methodFinder.Method(i)
 		ok, err := methodFilter(method.Name)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "testify: invalid regexp for -m: %s\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "testkit: invalid regexp for -m: %s\n", err)
+
+			// we need to exit with a non-zero status to indicate that the tests failed
+			//nolint:gocritic
 			os.Exit(1)
 		}
 

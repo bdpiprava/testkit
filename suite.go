@@ -55,8 +55,6 @@ type Suite struct {
 func (s *Suite) TearDownSuite() {
 	defer s.cleanDatabase()
 	defer s.cleanKafkaResources()
-	defer s.elasticSearchCleanData()
-	defer s.openSearchCleanData()
 }
 
 // T retrieves the current *testing.T context
@@ -113,6 +111,31 @@ func (s *Suite) Require() *require.Assertions {
 // Logger returns the logger
 func (s *Suite) Logger() logrus.FieldLogger {
 	return s.l
+}
+
+// Run provides suite functionality around golang subtests.  It should be
+// called in place of t.Run(name, func(t *testing.T)) in test suite code.
+// The passed-in func will be executed as a subtest with a fresh instance of t.
+// Provides compatibility with go test pkg -run TestSuite/TestName/SubTestName.
+func (s *Suite) Run(name string, subtest func()) bool {
+	oldT := s.T()
+
+	return oldT.Run(name, func(t *testing.T) {
+		s.SetT(t)
+		defer s.SetT(oldT)
+
+		defer recoverAndFailOnPanic(t)
+
+		if setupSubTest, ok := s.s.(SetupTest); ok {
+			setupSubTest.SetupTest()
+		}
+
+		if tearDownSubTest, ok := s.s.(TearDownTest); ok {
+			defer tearDownSubTest.TearDownTest()
+		}
+
+		subtest()
+	})
 }
 
 // initializeSuite initialize the suite
