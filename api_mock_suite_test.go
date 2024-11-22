@@ -18,8 +18,10 @@ func TestAPIMockSuiteTestSuite(t *testing.T) {
 }
 
 func (s *APIMockSuiteTestSuite) Test_SetupAPIMocksFromFile_ShouldReturnServiceURLs() {
-	serviceURLs := s.SetupAPIMocksFromFile("internal/testdata/test-data.yaml", map[string]string{
-		"limit": "10",
+	serviceURLs := s.SetupAPIMocksFromFile("internal/testdata/api-mock-test-data.yaml", map[string]string{
+		"limit":     "10",
+		"id":        "100",
+		"addressId": "200",
 	})
 
 	s.Require().Len(serviceURLs, 2)
@@ -33,14 +35,16 @@ func (s *APIMockSuiteTestSuite) Test_SetupAPIMocksFromFile_ShouldReturnServiceUR
 
 func (s *APIMockSuiteTestSuite) Test_SetupAPIMocksFromFile_ShouldSetupMocks() {
 	s.CleanAPIMock()
-	serviceURLs := s.SetupAPIMocksFromFile("internal/testdata/test-data.yaml", map[string]string{
-		"limit": "10",
+	serviceURLs := s.SetupAPIMocksFromFile("internal/testdata/api-mock-test-data.yaml", map[string]string{
+		"limit":     "10",
+		"id":        "100",
+		"addressId": "200",
 	})
 
 	req, err := http.NewRequestWithContext(
 		s.GetContext(),
 		http.MethodGet,
-		serviceURLs["example-service-1"]+"/api/v1/example?limit=10&page=1",
+		serviceURLs["example-service-1"]+"/api/v1/employee/100/address/200?limit=10&page=1",
 		nil,
 	)
 	s.Require().NoError(err)

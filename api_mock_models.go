@@ -43,7 +43,17 @@ func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.S
 		query.Set(name, resolveTemplateValue(value, dynamicParams))
 	}
 
-	req := wiremock.NewStubRule(r.Method, wiremock.URLEqualTo(fmt.Sprintf("/%s?%s", r.Path, query.Encode())))
+	if dynamicParams == nil {
+		dynamicParams = map[string]string{}
+	}
+
+	var queryStr string
+	if len(query) > 0 {
+		queryStr = fmt.Sprintf("?%s", query.Encode())
+	}
+
+	path := resolveTemplateValue(r.Path, dynamicParams)
+	req := wiremock.NewStubRule(r.Method, wiremock.URLEqualTo(fmt.Sprintf("/%s%s", path, queryStr)))
 	if strings.TrimSpace(r.Body) != "" {
 		req = req.WithBodyPattern(wiremock.EqualToJson(r.Body))
 	}
@@ -73,10 +83,12 @@ func (r *Response) ToWiremockResponse() wiremock.Response {
 // resolveTemplateValue resolves the template value
 func resolveTemplateValue(str string, params map[string]string) string {
 	if templateMatcher.MatchString(str) {
-		matches := templateMatcher.FindStringSubmatch(str)
-		for _, match := range matches {
-			tmpl := fmt.Sprintf("{{%s}}", match)
-			str = strings.ReplaceAll(str, tmpl, params[strings.TrimSpace(match)])
+		allGroups := templateMatcher.FindAllStringSubmatch(str, 100)
+		for _, group := range allGroups {
+			for _, match := range group {
+				tmpl := fmt.Sprintf("{{%s}}", match)
+				str = strings.ReplaceAll(str, tmpl, params[strings.TrimSpace(match)])
+			}
 		}
 	}
 	return str

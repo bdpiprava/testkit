@@ -18,7 +18,6 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 	s.NoError(err)
 
 	serviceURLs := make(map[string]string)
-
 	for name, paths := range root {
 		testPath := filepath.Join(name, testNameSanitizer.ReplaceAllString(s.T().Name(), "_"))
 		serviceURLs[name], err = url.JoinPath(suiteConfig.APIMockConfig.Address, testPath)
