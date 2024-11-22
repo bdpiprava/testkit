@@ -14,7 +14,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/sirupsen/logrus"
 
-	"github.com/bdpiprava/testkit/context"
 	"github.com/bdpiprava/testkit/search"
 )
 
@@ -161,7 +160,7 @@ func (s *Suite) ElasticSearchEventuallyBlockStatus(
 // ElasticSearchDeleteByQuery deletes documents matching the provided query.
 func (s *Suite) ElasticSearchDeleteByQuery(query string, indices ...string) {
 	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"query":   query,
 		"indices": indices,
 	})
@@ -183,8 +182,7 @@ func (s *Suite) ElasticSearchDeleteByQuery(query string, indices ...string) {
 
 // ElasticSearchSearchByQuery searches for documents matching the provided query.
 func (s *Suite) ElasticSearchSearchByQuery(query string, index string) search.QueryResponse {
-	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"query": query,
 		"index": index,
 	})
@@ -206,7 +204,7 @@ func (s *Suite) ElasticSearchSearchByQuery(query string, index string) search.Qu
 // ElasticSearchSearchCreateDocument creates a new document in the provided index
 func (s *Suite) ElasticSearchSearchCreateDocument(index string, document map[string]any) {
 	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"index": index,
 	})
 

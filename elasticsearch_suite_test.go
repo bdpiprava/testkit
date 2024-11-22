@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/bdpiprava/testkit"
 	"github.com/bdpiprava/testkit/search"
@@ -29,7 +28,7 @@ type ElasticSearchSuiteTest struct {
 }
 
 func TestElasticSearchSuiteTest(t *testing.T) {
-	suite.Run(t, new(ElasticSearchSuiteTest))
+	testkit.Run(t, new(ElasticSearchSuiteTest))
 }
 
 func (s *ElasticSearchSuiteTest) Test_RequireElasticSearchClient() {

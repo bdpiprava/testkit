@@ -7,7 +7,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
 
-	"github.com/bdpiprava/testkit/context"
 	"github.com/bdpiprava/testkit/kitkafka"
 )
 
@@ -20,8 +19,7 @@ type OnMessage func(*kafka.Message) bool
 // RequiresKafka is a helper function to get the test database based on configuration
 // returns the server address
 func (s *Suite) RequiresKafka(topics ...string) string {
-	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"test": s.T().Name(),
 		"func": "RequiresKafka",
 	})
@@ -56,9 +54,8 @@ func (s *Suite) Produce(topic string, key, value []byte, headers ...kafka.Header
 
 // ProduceMessage produce a message to kafka cluster
 func (s *Suite) ProduceMessage(message kitkafka.Message) {
-	ctx := s.GetContext()
 	servers := s.getCluster().BootstrapServers()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"test":   s.T().Name(),
 		"func":   "Produce",
 		"topic":  message.Topic,
@@ -97,9 +94,8 @@ func (s *Suite) ProduceMessage(message kitkafka.Message) {
 
 // Consume a message from the kafka topic
 func (s *Suite) Consume(topics []string, callback OnMessage) {
-	ctx := s.GetContext()
 	servers := s.getCluster().BootstrapServers()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"test":   s.T().Name(),
 		"func":   "Consume",
 		"topics": strings.Join(topics, ","),
@@ -164,6 +160,8 @@ func (s *Suite) cleanKafkaResources() {
 	}
 
 	for _, server := range s.kafkaServers {
-		server.Close()
+		if server != nil {
+			server.Close()
+		}
 	}
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/sirupsen/logrus"
 
-	"github.com/bdpiprava/testkit/context"
 	"github.com/bdpiprava/testkit/search"
 )
 
@@ -114,7 +113,7 @@ func (s *Suite) OpenSearchGetIndexSettings(index string) search.IndexSetting {
 // OpenSearchDeleteByQuery deletes documents matching the provided query.
 func (s *Suite) OpenSearchDeleteByQuery(query string, indices ...string) {
 	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"query":   query,
 		"indices": indices,
 	})
@@ -136,8 +135,7 @@ func (s *Suite) OpenSearchDeleteByQuery(query string, indices ...string) {
 
 // OpenSearchSearchByQuery searches for documents matching the provided query.
 func (s *Suite) OpenSearchSearchByQuery(query string, index string) search.QueryResponse {
-	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"query": query,
 		"index": index,
 	})
@@ -159,7 +157,7 @@ func (s *Suite) OpenSearchSearchByQuery(query string, index string) search.Query
 // OpenSearchSearchCreateDocument creates a new document in the provided index
 func (s *Suite) OpenSearchSearchCreateDocument(index string, document map[string]any) {
 	ctx := s.GetContext()
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
+	log := s.Logger().WithFields(logrus.Fields{
 		"index": index,
 	})
 

@@ -15,14 +15,14 @@ var testNameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 // SetupAPIMocksFromFile set up the services mock from a file and return the URLs
 func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]string) map[string]string {
 	root, err := readFile(file)
-	s.Require().NoError(err)
+	s.NoError(err)
 
 	serviceURLs := make(map[string]string)
 
 	for name, paths := range root {
 		testPath := filepath.Join(name, testNameSanitizer.ReplaceAllString(s.T().Name(), "_"))
-		serviceURLs[name], err = url.JoinPath(wiremockAddress, testPath)
-		s.Require().NoError(err)
+		serviceURLs[name], err = url.JoinPath(suiteConfig.APIMockConfig.Address, testPath)
+		s.NoError(err)
 
 		for _, path := range paths {
 			path.Request.Path = filepath.Join(testPath, path.Request.Path)
@@ -30,7 +30,7 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 				WillReturnResponse(path.Response.ToWiremockResponse()).
 				AtPriority(1))
 
-			s.Require().NoError(err)
+			s.NoError(err)
 		}
 	}
 

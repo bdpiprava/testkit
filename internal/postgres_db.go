@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -8,8 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/bdpiprava/testkit/context"
 )
 
 const (
@@ -84,9 +83,9 @@ func (p *PostgresDB) deleteTemplateDB(name string) error {
 }
 
 // CreateDatabase creates a new target database from the template database
-func (p *PostgresDB) CreateDatabase(ctx context.Context, targetName string) (*sqlx.DB, error) {
-	log := context.GetLogger(ctx).WithFields(logrus.Fields{
-		"func":     "CreateDatabase",
+func (p *PostgresDB) CreateDatabase(ctx context.Context, targetName string, log logrus.FieldLogger) (*sqlx.DB, error) {
+	log = log.WithFields(logrus.Fields{
+		"step":     "CreateDatabase",
 		"target":   targetName,
 		"template": p.config.FromTemplate,
 	})

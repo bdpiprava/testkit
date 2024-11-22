@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/bdpiprava/testkit"
 	"github.com/bdpiprava/testkit/search"
@@ -18,7 +17,7 @@ type OpenSearchSuiteTest struct {
 }
 
 func TestOpenSearchSuiteTest(t *testing.T) {
-	suite.Run(t, new(OpenSearchSuiteTest))
+	testkit.Run(t, new(OpenSearchSuiteTest))
 }
 
 func (s *OpenSearchSuiteTest) Test_RequireOpenSearchClient() {

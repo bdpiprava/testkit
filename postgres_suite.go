@@ -24,10 +24,9 @@ func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 	s.Require().NoError(err)
 
 	generatedName := s.generateDatabaseName(name)
-	ctx.SetData(keyDatabaseName, generatedName)
-	db, err := s.postgresDB.CreateDatabase(*ctx, name)
+	s.testDBs[s.T().Name()] = append(s.testDBs[s.T().Name()], generatedName)
+	db, err := s.postgresDB.CreateDatabase(ctx, name, s.Logger())
 	s.Require().NoError(err)
-	ctx.SetData(keyDatabase, db)
 	return db
 }
 

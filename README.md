@@ -158,7 +158,7 @@ type ExampleTestSuite struct {
 }
 
 func TestDatabaseIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(ExampleTestSuite))
+	testkit.Run(t, new(ExampleTestSuite))
 }
 
 func (s *ExampleTestSuite) TestSuite_ExampleTest() {

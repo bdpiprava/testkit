@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bdpiprava/testkit/internal"
 )
 
 func Test_InitialiseDatabase_WhenMissingGoMigrateConfig(t *testing.T) {
-	db, err := internal.InitialiseDatabase(internal.SuiteConfig{})
+	db, err := internal.InitialiseDatabase(internal.SuiteConfig{}, logrus.NewEntry(logrus.New()))
 
 	require.Nil(t, db)
 	require.EqualError(t, err, internal.ErrMissingGoMigrateConfig.Error())
@@ -37,7 +38,7 @@ func Test_InitialiseDatabase_WithTemplateTrue(t *testing.T) {
 			Database:    "testkit_db",
 			QueryParams: map[string]string{"sslmode": "disable"},
 		},
-	})
+	}, logrus.NewEntry(logrus.New()))
 
 	// Then
 	require.NoError(t, err)
@@ -64,7 +65,7 @@ func Test_InitialiseDatabase_WithTemplateFalse(t *testing.T) {
 			Database:    "testkit_db",
 			QueryParams: map[string]string{"sslmode": "disable"},
 		},
-	})
+	}, logrus.NewEntry(logrus.New()))
 
 	// Then
 	require.NoError(t, err)

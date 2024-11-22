@@ -9,8 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/bdpiprava/testkit/context"
 )
 
 const createFromTemplateQuery = `CREATE DATABASE %v WITH TEMPLATE '%v' OWNER ccs`
@@ -19,14 +17,9 @@ const createFromTemplateQuery = `CREATE DATABASE %v WITH TEMPLATE '%v' OWNER ccs
 var ErrMissingGoMigrateConfig = errors.New("missing go-migrate config")
 
 // InitialiseDatabase create a new database when go migrate is configured
-func InitialiseDatabase(config SuiteConfig) (*sqlx.DB, error) {
-	ctx := context.NewContext("go-migrate")
-	log := context.GetLogger(*ctx).WithFields(logrus.Fields{
-		"func": "InitialiseDatabase",
-	})
-
+func InitialiseDatabase(config SuiteConfig, log logrus.FieldLogger) (*sqlx.DB, error) {
 	if config.GoMigrateConfig == nil {
-		log.Error("missing go-migrate config in the config file")
+		log.Warn("missing go-migrate config in the config file")
 		return nil, ErrMissingGoMigrateConfig
 	}
 
@@ -59,7 +52,7 @@ func InitialiseDatabase(config SuiteConfig) (*sqlx.DB, error) {
 
 	if exists {
 		if !cfg.Fresh {
-			log.Infof("template database '%s' already exists, returning...", cfg.DatabaseName)
+			log.Debugf("template database '%s' already exists, returning...", cfg.DatabaseName)
 			return postgresDB.connect(cfg.DatabaseName)
 		}
 

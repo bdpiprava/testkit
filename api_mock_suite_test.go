@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/bdpiprava/testkit"
 )
 
@@ -16,7 +14,7 @@ type APIMockSuiteTestSuite struct {
 }
 
 func TestAPIMockSuiteTestSuite(t *testing.T) {
-	suite.Run(t, new(APIMockSuiteTestSuite))
+	testkit.Run(t, new(APIMockSuiteTestSuite))
 }
 
 func (s *APIMockSuiteTestSuite) Test_SetupAPIMocksFromFile_ShouldReturnServiceURLs() {

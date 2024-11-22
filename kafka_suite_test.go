@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/bdpiprava/testkit"
 )
@@ -15,7 +14,7 @@ type KafkaTestSuiteTest struct {
 }
 
 func TestKafkaTestSuiteTest(t *testing.T) {
-	suite.Run(t, new(KafkaTestSuiteTest))
+	testkit.Run(t, new(KafkaTestSuiteTest))
 }
 
 func (s *KafkaTestSuiteTest) Test_RequiresKafka() {
