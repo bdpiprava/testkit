@@ -4,7 +4,6 @@ linters:
     - bodyclose
     - copyloopvar
     - dogsled
-    - dupl
     - errcheck
     - errorlint
     - gocheckcompilerdirectives

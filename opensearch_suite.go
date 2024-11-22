@@ -10,6 +10,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -45,7 +46,7 @@ func (s *openSearch) CreateIndex(index string, settings search.CreateIndexSettin
 	}
 
 	ctx := context.Background()
-	resp, err := req.Do(ctx, esClient)
+	resp, err := req.Do(ctx, s.client)
 	if err != nil {
 		return err
 	}
@@ -60,7 +61,7 @@ func (s *openSearch) CreateIndex(index string, settings search.CreateIndexSettin
 
 // CloseIndices closes the indices
 func (s *openSearch) CloseIndices(indices ...string) {
-	_, _ = esClient.Indices.Close(indices)
+	_, _ = s.client.Indices.Close(indices)
 }
 
 // IndexExists checks if the index exists
@@ -80,10 +81,10 @@ func (s *openSearch) IndexExists(name string) (bool, error) {
 
 // FindIndices returns matching esIndices sorted by name
 func (s *openSearch) FindIndices(pattern string) (search.Indices, error) {
-	resp, err := esClient.Cat.Indices(
-		esClient.Cat.Indices.WithContext(context.Background()),
-		esClient.Cat.Indices.WithIndex(pattern),
-		esClient.Cat.Indices.WithFormat("json"),
+	resp, err := s.client.Cat.Indices(
+		s.client.Cat.Indices.WithContext(context.Background()),
+		s.client.Cat.Indices.WithIndex(pattern),
+		s.client.Cat.Indices.WithFormat("json"),
 	)
 	if err != nil {
 		return nil, err
@@ -101,8 +102,8 @@ func (s *openSearch) FindIndices(pattern string) (search.Indices, error) {
 
 // GetIndexSettings returns the settings for the given index
 func (s *openSearch) GetIndexSettings(index string) (search.IndexSetting, error) {
-	resp, err := esClient.Indices.GetSettings(
-		esClient.Indices.GetSettings.WithIndex(index),
+	resp, err := s.client.Indices.GetSettings(
+		s.client.Indices.GetSettings.WithIndex(index),
 	)
 	if err != nil {
 		return search.IndexSetting{}, err
@@ -131,13 +132,13 @@ func (s *openSearch) DeleteIndices(pattern string) error {
 	for _, index := range indices {
 		list = append(list, index.Name)
 	}
-	_, err = esClient.Indices.Delete(list)
+	_, err = s.client.Indices.Delete(list)
 	return err
 }
 
 // DeleteByQuery deletes documents matching the provided query.
 func (s *openSearch) DeleteByQuery(indices []string, query string) error {
-	resp, err := esClient.DeleteByQuery(indices, strings.NewReader(query))
+	resp, err := s.client.DeleteByQuery(indices, strings.NewReader(query))
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete by query")
 	}
@@ -155,9 +156,9 @@ func (s *openSearch) DeleteByQuery(indices []string, query string) error {
 // SearchByQuery searches for documents matching the provided query.
 func (s *openSearch) SearchByQuery(index string, query string) (search.QueryResponse, error) {
 	var result search.QueryResponse
-	resp, err := esClient.Search(
-		esClient.Search.WithIndex(index),
-		esClient.Search.WithBody(strings.NewReader(query)),
+	resp, err := s.client.Search(
+		s.client.Search.WithIndex(index),
+		s.client.Search.WithBody(strings.NewReader(query)),
 	)
 	if err != nil {
 		return result, errors.Wrapf(err, "failed to search by query")
@@ -185,10 +186,17 @@ func (s *openSearch) CreateDocument(index string, document map[string]any) error
 		return err
 	}
 
+	options := make([]func(*opensearchapi.IndexRequest), 0)
+	options = append(options, s.client.Index.WithRefresh("true"))
+	if id, ok := document["document_id"]; ok {
+		options = append(options, s.client.Index.WithDocumentID(id.(string)))
+	}
+
 	log.Debug("creating document")
-	resp, err := esClient.Index(
+	resp, err := s.client.Index(
 		index,
 		bytes.NewReader(content),
+		options...,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create document")
