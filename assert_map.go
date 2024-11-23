@@ -45,6 +45,11 @@ func (s *Suite) AssertMapContains(big, small interface{}) bool {
 		bValue := bigMap.MapIndex(k)
 
 		smKind := reflect.TypeOf(smValue.Interface()).Kind()
+
+		if !bValue.IsValid() {
+			return s.Fail(fmt.Sprintf(mapContainsFailTemplate, bigMap, smallMap, k, smKind.String(), "nil"))
+		}
+
 		bKind := reflect.TypeOf(bValue.Interface()).Kind()
 		if !bValue.IsValid() {
 			return s.Fail(fmt.Sprintf(mapContainsFailTemplate, bigMap, smallMap, k, smKind.String(), bKind.String()))
