@@ -2,6 +2,7 @@ package testkit
 
 import (
 	"context"
+	"flag"
 	"strings"
 	"sync"
 	"testing"
@@ -16,45 +17,39 @@ import (
 	"github.com/wiremock/go-wiremock"
 
 	"github.com/bdpiprava/testkit/internal"
+	"github.com/bdpiprava/testkit/suite"
+)
+
+var (
+	allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
+	matchMethod    = flag.String("testkit.m", "", "regular expression to select tests of the testify suite to run")
+	esClient       *elasticsearch.Client
+	osClient       *opensearch.Client
+	wiremockClient *wiremock.Client
+	suiteConfig    *internal.SuiteConfig
 )
 
 const defaultWiremockAddress = "http://localhost:8080"
 
-var esClient *elasticsearch.Client
-var osClient *opensearch.Client
-var wiremockClient *wiremock.Client
-var suiteConfig *internal.SuiteConfig
-
 type Suite struct {
+	suite.Suite
 	*assert.Assertions
 
 	mu  sync.RWMutex
 	t   *testing.T
-	s   TestingSuite
 	ctx context.Context
 	r   *require.Assertions
 	l   logrus.FieldLogger
-	i   bool
 
 	// Used by postgres_suite.go
 	postgresDB *internal.PostgresDB
-	testDBs    map[string][]string
-
-	// Used by elasticsearch_suite.go
-	esIndices map[string][]string
-
-	// Used by opensearch_suite.go
-	osIndices map[string][]string
 
 	// Used by kafka_suite.go
 	kafkaServers   map[string]*kafka.MockCluster
 	kafkaConsumers []*kafka.Consumer
-}
 
-// TearDownSuite perform the cleanup of the database
-func (s *Suite) TearDownSuite() {
-	defer s.cleanDatabase()
-	defer s.cleanKafkaResources()
+	// Parent suite to have access to the implemented methods of parent struct
+	s TestingSuite
 }
 
 // T retrieves the current *testing.T context
@@ -67,35 +62,26 @@ func (s *Suite) T() *testing.T {
 // SetT sets the current *testing.T context
 func (s *Suite) SetT(t *testing.T) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.t = t
-	s.mu.Unlock()
+	s.Assertions = assert.New(t)
+	s.r = require.New(t)
+}
 
-	// suite is not initialised yet
-	if !s.i {
-		return
-	}
-
-	if _, ok := s.testDBs[s.T().Name()]; !ok {
-		s.testDBs[s.T().Name()] = make([]string, 0)
-	}
-
-	if _, ok := s.esIndices[s.T().Name()]; !ok {
-		s.esIndices[s.T().Name()] = make([]string, 0)
-	}
-
-	if _, ok := s.osIndices[s.T().Name()]; !ok {
-		s.osIndices[s.T().Name()] = make([]string, 0)
-	}
+// DoOnce setup the suite
+func (s *Suite) DoOnce(t *testing.T) error {
+	return s.initializeSuite(t)
 }
 
 // SetS needs to set the current test suite as parent to get access to the parent methods
 func (s *Suite) SetS(suite TestingSuite) {
 	s.s = suite
-	err := s.initializeSuite(s.T())
-	if err != nil {
-		s.T().Fatalf("failed to initialize suite: %s", err)
-	}
-	s.i = true
+}
+
+// TearDownSuite perform the cleanup of the database
+func (s *Suite) TearDownSuite() {
+	defer s.cleanDatabase()
+	defer s.cleanKafkaResources()
 }
 
 // GetContext returns the context created for the current test, if not exists then creates a new context and returns
@@ -139,16 +125,10 @@ func (s *Suite) Run(name string, subtest func()) bool {
 }
 
 // initializeSuite initialize the suite
-func (s *Suite) initializeSuite(t *testing.T) error {
+func (s *Suite) initializeSuite(_ *testing.T) error {
 	s.ctx = context.Background()
 	s.kafkaServers = make(map[string]*kafka.MockCluster)
 	s.kafkaConsumers = make([]*kafka.Consumer, 0)
-	s.esIndices = make(map[string][]string)
-	s.osIndices = make(map[string][]string)
-	s.testDBs = make(map[string][]string)
-
-	s.Assertions = assert.New(t)
-	s.r = require.New(t)
 
 	logger := logrus.New()
 	config, err := getConfig()
@@ -172,11 +152,11 @@ func (s *Suite) initializeSuite(t *testing.T) error {
 		wiremockClient = wiremock.NewClient(config.APIMockConfig.Address)
 	}
 
-	if initialiseElasticSearch(config.ElasticSearch, s.l) != nil {
+	if err = initialiseElasticSearch(config.ElasticSearch, s.l); err != nil {
 		return err
 	}
 
-	if initialiseOpenSearch(config.OpenSearch, s.l) != nil {
+	if err = initialiseOpenSearch(config.OpenSearch, s.l); err != nil {
 		return err
 	}
 

@@ -20,7 +20,7 @@ services:
     image: elasticsearch:7.12.0
     container_name: testkit-es
     ports:
-      - "9200:9200"
+      - "9211:9200"
       - "9300:9300"
     environment:
       cluster.name: testkit

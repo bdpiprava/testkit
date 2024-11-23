@@ -30,6 +30,11 @@ type TestingSuite interface {
 	Logger() logrus.FieldLogger
 }
 
+// OnlyOnce has a Do method, which will run only once.
+type OnlyOnce interface {
+	DoOnce(*testing.T) error
+}
+
 // SetupSuite has a SetupSuite method, which will run before the tests in the suite are run.
 type SetupSuite interface {
 	SetupSuite()

@@ -1,5 +1,5 @@
 ---
-log_level: trace
+log_level: debug
 
 # PostgreSQL connection configuration
 postgres:
@@ -12,7 +12,7 @@ postgres:
 
 # Elasticsearch connection configuration
 elasticsearch:
-  addresses: http://localhost:9200 # comma separated list of addresses
+  addresses: http://localhost:9211 # comma separated list of addresses
   username: testkit
   password: badger
 

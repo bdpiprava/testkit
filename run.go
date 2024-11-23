@@ -1,7 +1,6 @@
 package testkit
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"reflect"
@@ -10,12 +9,16 @@ import (
 	"testing"
 )
 
-var allTestsFilter = func(_, _ string) (bool, error) { return true, nil }
-var matchMethod = flag.String("testkit.m", "", "regular expression to select tests of the testify suite to run")
-
 // Run runs the suite
 func Run(t *testing.T, suite TestingSuite) {
 	defer recoverAndFailOnPanic(t)
+
+	if once, ok := suite.(OnlyOnce); ok {
+		if err := once.DoOnce(t); err != nil {
+			t.Fatalf("error running test suite: %v", err)
+		}
+	}
+
 	suite.SetT(t)
 	suite.SetS(suite)
 
@@ -48,9 +51,7 @@ func Run(t *testing.T, suite TestingSuite) {
 			Name: method.Name,
 			F: func(t *testing.T) {
 				parentT := suite.T()
-				suite.SetT(t)
-				defer recoverAndFailOnPanic(t)
-				defer func() {
+				defer func(t *testing.T) {
 					t.Helper()
 					r := recover()
 					if tearDownTestSuite, ok := suite.(TearDownTest); ok {
@@ -59,8 +60,10 @@ func Run(t *testing.T, suite TestingSuite) {
 
 					suite.SetT(parentT)
 					failOnPanic(t, r)
-				}()
+				}(parentT)
+				defer recoverAndFailOnPanic(t)
 
+				suite.SetT(t)
 				if setupTestSuite, ok := suite.(SetupTest); ok {
 					setupTestSuite.SetupTest()
 				}

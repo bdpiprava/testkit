@@ -1,19 +1,21 @@
 package testkit
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // postgres driver
 
-	"github.com/bdpiprava/testkit/context"
 	"github.com/bdpiprava/testkit/internal"
 )
 
+type ctxKey string
+
 const (
-	keyDatabaseName context.Key = "database_name"
-	keyDatabase     context.Key = "database"
+	keyDatabaseName ctxKey = "database_name"
+	keyDatabase     ctxKey = "database"
 )
 
 // RequiresPostgresDatabase is a helper function to get the test database based on configuration
@@ -24,9 +26,10 @@ func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 	s.Require().NoError(err)
 
 	generatedName := s.generateDatabaseName(name)
-	s.testDBs[s.T().Name()] = append(s.testDBs[s.T().Name()], generatedName)
 	db, err := s.postgresDB.CreateDatabase(ctx, name, s.Logger())
 	s.Require().NoError(err)
+	s.ctx = context.WithValue(ctx, keyDatabaseName, generatedName)
+	s.ctx = context.WithValue(s.ctx, keyDatabase, db)
 	return db
 }
 
