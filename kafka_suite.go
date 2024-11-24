@@ -144,13 +144,24 @@ func (s *Suite) getKafkaConfig() *kafka.ConfigMap {
 	}
 }
 
-// getCluster returns the kafka cluster
+// getCluster returns the kafka cluster for current test or from parent tests or suite
 func (s *Suite) getCluster() *kafka.MockCluster {
-	cluster, ok := s.kafkaServers[s.T().Name()]
-	if !ok {
-		s.Require().Fail("Kafka cluster not found. call RequiresKafka before calling Produce")
+	name := s.T().Name()
+	for {
+		cluster, ok := s.kafkaServers[name]
+		if ok {
+			return cluster
+		}
+
+		if idx := strings.LastIndex(name, "/"); idx <= 0 {
+			break
+		}
+
+		name = name[strings.LastIndex(name, "/")+1:]
 	}
-	return cluster
+
+	s.Require().Fail("Kafka cluster not found. call RequiresKafka before calling Produce")
+	return nil
 }
 
 // cleanKafkaResources closes the kafka consumers and servers
