@@ -1,5 +1,5 @@
 ---
-log_level: debug
+log_level: warn
 
 # PostgreSQL connection configuration
 postgres:
