@@ -44,7 +44,6 @@ type Suite struct {
 	// Used by postgres_suite.go
 	postgresDB *internal.PostgresDB
 
-	// Used by kafka_suite.go
 	kafkaServers   map[string]*kafka.MockCluster
 	kafkaConsumers []*kafka.Consumer
 

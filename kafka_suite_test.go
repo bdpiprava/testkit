@@ -3,7 +3,6 @@ package testkit_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
@@ -23,40 +22,38 @@ func (s *KafkaTestSuiteTest) SetupSuite() {
 }
 
 func (s *KafkaTestSuiteTest) Test_ShouldGetKafkaServerFromTheParentTestWhenNotDeclaredAtTestLevel() {
+	var wg sync.WaitGroup
+	wg.Add(1)
 	s.Run("level2", func() {
 		s.RequiresKafka("level2_topic")
 		s.Run("level3", func() {
 			s.Run("level4", func() {
 				s.Produce("level2_topic", []byte("key"), []byte("value"))
-				received := false
-				s.Consume([]string{"level2_topic"}, func(msg *kafka.Message) bool {
-					received = true
+				s.Consume([]string{"level2_topic"}, func(_ *kafka.Message) bool {
+					wg.Done()
 					return true
 				})
-
-				s.Eventually(func() bool { return received }, 10*time.Second, 100*time.Millisecond)
 			})
 		})
-
 	})
+	wg.Wait()
 }
 
 func (s *KafkaTestSuiteTest) Test_ShouldGetKafkaServerFromTheSuiteWhenNotDeclaredAtTestLevel() {
+	var wg sync.WaitGroup
+	wg.Add(1)
 	s.Run("level2", func() {
 		s.Run("level3", func() {
 			s.Run("level4", func() {
 				s.Produce("suite_topic", []byte("key"), []byte("value"))
-				received := false
-				s.Consume([]string{"suite_topic"}, func(msg *kafka.Message) bool {
-					received = true
+				s.Consume([]string{"suite_topic"}, func(_ *kafka.Message) bool {
+					wg.Done()
 					return true
 				})
-
-				s.Eventually(func() bool { return received }, 10*time.Second, 100*time.Millisecond)
 			})
 		})
-
 	})
+	wg.Wait()
 }
 
 func (s *KafkaTestSuiteTest) Test_RequiresKafka() {

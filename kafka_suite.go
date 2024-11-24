@@ -2,6 +2,7 @@ package testkit
 
 import (
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -13,6 +14,8 @@ import (
 const pollTimeout = 10 * time.Second
 const deliveryTimeout = 10 * time.Second
 
+var mu sync.RWMutex
+
 // OnMessage is a callback function that is called when a message is received
 type OnMessage func(*kafka.Message) bool
 
@@ -23,10 +26,14 @@ func (s *Suite) RequiresKafka(topics ...string) string {
 		"test": s.T().Name(),
 		"func": "RequiresKafka",
 	})
+
+	mu.RLock()
 	if cluster, ok := s.kafkaServers[s.T().Name()]; ok {
 		log.Tracef("Kafka cluster already exists, returning bootstrap servers %s", cluster.BootstrapServers())
+		mu.RUnlock()
 		return cluster.BootstrapServers()
 	}
+	mu.RUnlock()
 
 	log.Trace("Creating new Kafka cluster")
 	cluster, err := kafka.NewMockCluster(1)
@@ -38,6 +45,8 @@ func (s *Suite) RequiresKafka(topics ...string) string {
 	}
 
 	log.Infof("Topics created: %v", topics)
+	mu.Lock()
+	defer mu.Unlock()
 	s.kafkaServers[s.T().Name()] = cluster
 	return cluster.BootstrapServers()
 }
@@ -106,6 +115,8 @@ func (s *Suite) Consume(topics []string, callback OnMessage) {
 	log.Info("Creating consumer")
 	consumer, err := kafka.NewConsumer(s.getKafkaConfig())
 	s.Require().NoError(err)
+	mu.Lock()
+	defer mu.Unlock()
 	s.kafkaConsumers = append(s.kafkaConsumers, consumer)
 	s.Require().NoError(consumer.SubscribeTopics(topics, nil))
 
@@ -146,6 +157,8 @@ func (s *Suite) getKafkaConfig() *kafka.ConfigMap {
 
 // getCluster returns the kafka cluster for current test or from parent tests or suite
 func (s *Suite) getCluster() *kafka.MockCluster {
+	mu.RLock()
+	defer mu.RUnlock()
 	name := s.T().Name()
 	for {
 		cluster, ok := s.kafkaServers[name]
@@ -166,6 +179,8 @@ func (s *Suite) getCluster() *kafka.MockCluster {
 
 // cleanKafkaResources closes the kafka consumers and servers
 func (s *Suite) cleanKafkaResources() {
+	mu.RLock()
+	defer mu.RUnlock()
 	for _, c := range s.kafkaConsumers {
 		closeSilently(c)
 	}
