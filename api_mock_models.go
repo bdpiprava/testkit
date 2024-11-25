@@ -49,11 +49,11 @@ func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.S
 
 	var queryStr string
 	if len(query) > 0 {
-		queryStr = fmt.Sprintf("?%s", query.Encode())
+		queryStr = fmt.Sprintf("\\?%s", query.Encode())
 	}
 
 	path := resolveTemplateValue(r.Path, dynamicParams)
-	req := wiremock.NewStubRule(r.Method, wiremock.URLEqualTo(fmt.Sprintf("/%s%s", path, queryStr)))
+	req := wiremock.NewStubRule(r.Method, wiremock.URLMatching(fmt.Sprintf("/%s%s", path, queryStr)))
 	if strings.TrimSpace(r.Body) != "" {
 		req = req.WithBodyPattern(wiremock.EqualToJson(r.Body))
 	}
