@@ -37,7 +37,7 @@ type SearchClient interface {
 	// SearchByQuery searches for documents matching the provided query.
 	SearchByQuery(index string, query string) (search.QueryResponse, error)
 	// CreateDocument creates a new document in the provided index
-	CreateDocument(index string, document map[string]any) error
+	CreateDocument(index, docID string, document map[string]any) error
 }
 
 // ElasticSearch is a wrapper around the elasticsearch client
@@ -265,7 +265,7 @@ func (s *elasticSearch) SearchByQuery(index string, query string) (search.QueryR
 }
 
 // CreateDocument creates a new document in the provided index
-func (s *elasticSearch) CreateDocument(index string, document map[string]any) error {
+func (s *elasticSearch) CreateDocument(index, docID string, document map[string]any) error {
 	log := s.log.WithFields(logrus.Fields{
 		"index": index,
 	})
@@ -277,17 +277,12 @@ func (s *elasticSearch) CreateDocument(index string, document map[string]any) er
 		return err
 	}
 
-	options := make([]func(*esapi.IndexRequest), 0)
-	options = append(options, s.client.Index.WithRefresh("true"))
-	if id, ok := document["document_id"]; ok {
-		options = append(options, s.client.Index.WithDocumentID(id.(string)))
-	}
-
 	log.Debug("creating document")
 	resp, err := s.client.Index(
 		index,
 		bytes.NewReader(content),
-		options...,
+		s.client.Index.WithRefresh("true"),
+		s.client.Index.WithDocumentID(docID),
 	)
 	if err != nil {
 		log.Debug("failed to create document")

@@ -128,15 +128,15 @@ func (s *OpenSearchSuiteTest) Test_SearchClient() {
 			s.Require().NoError(client.DeleteIndices("test_search_by_query_*"))
 			indexName := fmt.Sprintf("test_search_by_query_%d", time.Now().Unix())
 			s.Require().NoError(client.CreateIndex(indexName, createIndexSettings))
-			s.Require().NoError(client.CreateDocument(indexName, map[string]any{
+			s.Require().NoError(client.CreateDocument(indexName, "1", map[string]any{
 				"id":   "1",
 				"name": "Bob",
 			}))
-			s.Require().NoError(client.CreateDocument(indexName, map[string]any{
+			s.Require().NoError(client.CreateDocument(indexName, "2", map[string]any{
 				"id":   "2",
 				"name": "Alice",
 			}))
-			s.Require().NoError(client.CreateDocument(indexName, map[string]any{
+			s.Require().NoError(client.CreateDocument(indexName, "3", map[string]any{
 				"id":   "3",
 				"name": "Bob",
 			}))
@@ -150,11 +150,11 @@ func (s *OpenSearchSuiteTest) Test_SearchClient() {
 			s.Require().NoError(client.DeleteIndices("test_delete_by_query_*"))
 			indexName := fmt.Sprintf("test_delete_by_query_%d", time.Now().Unix())
 			s.Require().NoError(client.CreateIndex(indexName, createIndexSettings))
-			s.Require().NoError(client.CreateDocument(indexName, map[string]any{
+			s.Require().NoError(client.CreateDocument(indexName, "1", map[string]any{
 				"id":   "1",
 				"name": "Bob",
 			}))
-			s.Require().NoError(client.CreateDocument(indexName, map[string]any{
+			s.Require().NoError(client.CreateDocument(indexName, "2", map[string]any{
 				"id":   "2",
 				"name": "Alice",
 			}))

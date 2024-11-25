@@ -10,7 +10,6 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/opensearch-project/opensearch-go/v2"
-	"github.com/opensearch-project/opensearch-go/v2/opensearchapi"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -242,7 +241,7 @@ func (s *openSearch) SearchByQuery(index string, query string) (search.QueryResp
 }
 
 // CreateDocument creates a new document in the provided index
-func (s *openSearch) CreateDocument(index string, document map[string]any) error {
+func (s *openSearch) CreateDocument(index, docID string, document map[string]any) error {
 	log := s.log.WithFields(logrus.Fields{
 		"index": index,
 	})
@@ -254,17 +253,12 @@ func (s *openSearch) CreateDocument(index string, document map[string]any) error
 		return err
 	}
 
-	options := make([]func(*opensearchapi.IndexRequest), 0)
-	options = append(options, s.client.Index.WithRefresh("true"))
-	if id, ok := document["document_id"]; ok {
-		options = append(options, s.client.Index.WithDocumentID(id.(string)))
-	}
-
 	log.Debug("creating document")
 	resp, err := s.client.Index(
 		index,
 		bytes.NewReader(content),
-		options...,
+		s.client.Index.WithRefresh("true"),
+		s.client.Index.WithDocumentID(docID),
 	)
 	if err != nil {
 		log.Debug("failed to create document")
