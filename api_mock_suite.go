@@ -17,6 +17,10 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 	root, err := readFile(file)
 	s.NoError(err)
 
+	if dynamicParams == nil {
+		dynamicParams = make(map[string]string)
+	}
+
 	serviceURLs := make(map[string]string)
 	for name, paths := range root {
 		testPath := filepath.Join(name, testNameSanitizer.ReplaceAllString(s.T().Name(), "_"))
@@ -26,7 +30,7 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 		for _, path := range paths {
 			path.Request.Path = filepath.Join(testPath, path.Request.Path)
 			err = wiremockClient.StubFor(path.Request.ToWiremockRequest(dynamicParams).
-				WillReturnResponse(path.Response.ToWiremockResponse()).
+				WillReturnResponse(path.Response.ToWiremockResponse(dynamicParams)).
 				AtPriority(1))
 
 			s.NoError(err)

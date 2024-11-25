@@ -43,10 +43,6 @@ func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.S
 		query.Set(name, resolveTemplateValue(value, dynamicParams))
 	}
 
-	if dynamicParams == nil {
-		dynamicParams = map[string]string{}
-	}
-
 	var queryStr string
 	if len(query) > 0 {
 		queryStr = fmt.Sprintf("\\?%s", query.Encode())
@@ -69,9 +65,10 @@ func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.S
 }
 
 // ToWiremockResponse converts the Response to a wiremock.Response
-func (r *Response) ToWiremockResponse() wiremock.Response {
+func (r *Response) ToWiremockResponse(dynamicParams map[string]string) wiremock.Response {
+	body := resolveTemplateValue(r.Body, dynamicParams)
 	resp := wiremock.NewResponse().
-		WithBody(r.Body).
+		WithBody(body).
 		WithStatus(r.Status)
 
 	for name, value := range r.Headers {

@@ -24,11 +24,11 @@ example-service-2:
       headers:
         Authorization: "Bearer abcd"
         Content-Type: "application/json"
-      response:
-        status: 200
-        headers:
-          Content-Type: "application/json"
-        body: |
-          {
-            "message": "Hello, World!"
-          }
+    response:
+      status: 200
+      headers:
+        Content-Type: "application/json"
+      body: |
+        {
+          "message": "Hello, {{message}}"
+        }
