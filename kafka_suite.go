@@ -1,6 +1,7 @@
 package testkit
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -145,6 +146,28 @@ func (s *Suite) Consume(topics []string, callback OnMessage) {
 			}
 		}
 	}(consumer)
+}
+
+// WaitForMessage waits for a message to be consumed from the kafka topics
+func (s *Suite) WaitForMessage(topic string, timout time.Duration) (*kafka.Message, error) {
+	timeoutTimer := time.NewTimer(timout)
+	defer timeoutTimer.Stop()
+
+	done := make(chan struct{})
+	var received *kafka.Message
+	s.Consume([]string{topic}, func(msg *kafka.Message) bool {
+		close(done)
+		received = msg
+		return true
+	})
+
+	// Then - wait for the message to be consumed
+	select {
+	case <-done:
+		return received, nil
+	case <-timeoutTimer.C:
+		return nil, fmt.Errorf("timeout reached while waiting for the message in topic %s", topic)
+	}
 }
 
 func (s *Suite) getKafkaConfig() *kafka.ConfigMap {
