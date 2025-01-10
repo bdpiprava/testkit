@@ -141,10 +141,11 @@ func (s *Suite) initializeSuite(_ *testing.T) error {
 	logger.SetLevel(level)
 	s.l = logrus.NewEntry(logger)
 
-	_, err = internal.InitialiseDatabase(*config, s.l)
+	db, err := internal.InitialiseDatabase(*config, s.l)
 	if err != nil && !errors.Is(err, internal.ErrMissingGoMigrateConfig) {
 		return err
 	}
+	defer closeSilently(db)
 
 	if wiremockClient == nil {
 		wiremockClient = wiremock.NewClient(config.APIMockConfig.Address)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -300,9 +301,11 @@ func (s *elasticSearch) CreateDocument(index, docID string, document map[string]
 }
 
 func closeSilently(closable io.Closer) {
-	if closable != nil {
-		_ = closable.Close()
+	if closable == nil || (reflect.ValueOf(closable).Kind() == reflect.Ptr && reflect.ValueOf(closable).IsNil()) {
+		return
 	}
+
+	_ = closable.Close()
 }
 
 func parseElasticSearchResponse[T any](statusCode int, body io.ReadCloser) (T, error) {
