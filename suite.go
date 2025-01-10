@@ -41,11 +41,9 @@ type Suite struct {
 	r   *require.Assertions
 	l   logrus.FieldLogger
 
-	// Used by postgres_suite.go
-	postgresDB *internal.PostgresDB
-
 	kafkaServers   map[string]*kafka.MockCluster
 	kafkaConsumers []*kafka.Consumer
+	postgresDBs    map[string]psqlDataHolder
 
 	// Parent suite to have access to the implemented methods of parent struct
 	s TestingSuite
@@ -127,6 +125,7 @@ func (s *Suite) Run(name string, subtest func()) bool {
 func (s *Suite) initializeSuite(_ *testing.T) error {
 	s.ctx = context.Background()
 	s.kafkaServers = make(map[string]*kafka.MockCluster)
+	s.postgresDBs = make(map[string]psqlDataHolder)
 	s.kafkaConsumers = make([]*kafka.Consumer, 0)
 
 	logger := logrus.New()

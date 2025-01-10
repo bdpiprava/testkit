@@ -1,7 +1,6 @@
 package testkit
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -12,12 +11,12 @@ import (
 	"github.com/bdpiprava/testkit/internal"
 )
 
-type ctxKey string
-
-const (
-	keyDatabaseName ctxKey = "database_name"
-	keyDatabase     ctxKey = "database"
-)
+type psqlDataHolder struct {
+	generatedName string
+	actualName    string
+	db            *sqlx.DB
+	helper        *internal.PostgresDB
+}
 
 var errDBNotInitiated = fmt.Errorf("database not initiated, must call RequiresPostgresDatabase before using this method")
 
@@ -25,26 +24,33 @@ var errDBNotInitiated = fmt.Errorf("database not initiated, must call RequiresPo
 func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 	var err error
 	ctx := s.GetContext()
-	s.postgresDB, err = internal.NewPostgresDB(suiteConfig.PostgresConfig)
+	postgresDB, err := internal.NewPostgresDB(suiteConfig.PostgresConfig)
 	s.Require().NoError(err)
 
 	generatedName := s.generateDatabaseName(name)
-	db, err := s.postgresDB.CreateDatabase(ctx, generatedName, s.Logger())
+	db, err := postgresDB.CreateDatabase(ctx, generatedName, s.Logger())
 	s.Require().NoError(err)
-	s.ctx = context.WithValue(ctx, keyDatabaseName, generatedName)
-	s.ctx = context.WithValue(s.ctx, keyDatabase, db)
+
+	dataHolder := psqlDataHolder{
+		generatedName: generatedName,
+		actualName:    name,
+		helper:        postgresDB,
+		db:            db,
+	}
+	s.postgresDBs[s.T().Name()] = dataHolder
+
 	return db
 }
 
 // cleanDatabase delete the database instance
 func (s *Suite) cleanDatabase() {
-	ctx := s.GetContext()
-	if db, ok := ctx.Value(keyDatabase).(*sqlx.DB); ok {
-		if db == nil {
+	if dataHolder, ok := s.postgresDBs[s.T().Name()]; ok {
+		if dataHolder.db == nil {
 			return
 		}
-		_ = db.Close()
-		_ = s.postgresDB.Delete(ctx.Value(keyDatabaseName).(string))
+
+		_ = dataHolder.db.Close()
+		_ = dataHolder.helper.Delete(dataHolder.generatedName)
 	}
 }
 
@@ -55,9 +61,8 @@ func (s *Suite) generateDatabaseName(prefix string) string {
 
 // PsqlDB returns the database instance for the test if initiated or returns error
 func (s *Suite) PsqlDB() (*sqlx.DB, error) {
-	ctx := s.GetContext()
-	if db, ok := ctx.Value(keyDatabase).(*sqlx.DB); ok {
-		return db, nil
+	if dataHolder, ok := s.postgresDBs[s.T().Name()]; ok {
+		return dataHolder.db, nil
 	}
 	return nil, errDBNotInitiated
 }
@@ -65,11 +70,10 @@ func (s *Suite) PsqlDB() (*sqlx.DB, error) {
 // PsqlDSN returns the database connection string for the test db if initiated
 // else returns error
 func (s *Suite) PsqlDSN() (string, error) {
-	ctx := s.GetContext()
-	name, ok := ctx.Value(keyDatabaseName).(string)
+	dataHolder, ok := s.postgresDBs[s.T().Name()]
 	if !ok {
 		return "", errDBNotInitiated
 	}
 
-	return s.postgresDB.DSN(name), nil
+	return dataHolder.helper.DSN(dataHolder.generatedName), nil
 }
