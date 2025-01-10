@@ -1,6 +1,7 @@
 package testkit_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -42,6 +43,22 @@ func (s *DatabaseIntegrationTestSuite) TestSuite_PsqlDB_Failure() {
 	got, gotErr := s.PsqlDB()
 
 	s.Nil(got)
+	s.EqualError(gotErr, "database not initiated, must call RequiresPostgresDatabase before using this method")
+}
+
+func (s *DatabaseIntegrationTestSuite) TestSuite_PsqlDSN_Success() {
+	s.RequiresPostgresDatabase("PsqlDSN_Success")
+
+	got, gotErr := s.PsqlDSN()
+
+	s.NoError(gotErr)
+	s.True(regexp.MatchString("postgres://testkit:badger@localhost:5544/psqldsn_success_\\d*\\?sslmode=disable", got))
+}
+
+func (s *DatabaseIntegrationTestSuite) TestSuite_PsqlDSN_Failure() {
+	got, gotErr := s.PsqlDSN()
+
+	s.Empty(got)
 	s.EqualError(gotErr, "database not initiated, must call RequiresPostgresDatabase before using this method")
 }
 

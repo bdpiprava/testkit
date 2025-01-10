@@ -19,6 +19,8 @@ const (
 	keyDatabase     ctxKey = "database"
 )
 
+var errDBNotInitiated = fmt.Errorf("database not initiated, must call RequiresPostgresDatabase before using this method")
+
 // RequiresPostgresDatabase is a helper function to get the test database based on configuration
 func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 	var err error
@@ -57,5 +59,17 @@ func (s *Suite) PsqlDB() (*sqlx.DB, error) {
 	if db, ok := ctx.Value(keyDatabase).(*sqlx.DB); ok {
 		return db, nil
 	}
-	return nil, fmt.Errorf("database not initiated, must call RequiresPostgresDatabase before using this method")
+	return nil, errDBNotInitiated
+}
+
+// PsqlDSN returns the database connection string for the test db if initiated
+// else returns error
+func (s *Suite) PsqlDSN() (string, error) {
+	ctx := s.GetContext()
+	name, ok := ctx.Value(keyDatabaseName).(string)
+	if !ok {
+		return "", errDBNotInitiated
+	}
+
+	return s.postgresDB.DSN(name), nil
 }
