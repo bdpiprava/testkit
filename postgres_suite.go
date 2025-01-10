@@ -3,6 +3,7 @@ package testkit
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -26,7 +27,7 @@ func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 	s.Require().NoError(err)
 
 	generatedName := s.generateDatabaseName(name)
-	db, err := s.postgresDB.CreateDatabase(ctx, name, s.Logger())
+	db, err := s.postgresDB.CreateDatabase(ctx, generatedName, s.Logger())
 	s.Require().NoError(err)
 	s.ctx = context.WithValue(ctx, keyDatabaseName, generatedName)
 	s.ctx = context.WithValue(s.ctx, keyDatabase, db)
@@ -47,5 +48,14 @@ func (s *Suite) cleanDatabase() {
 
 // generateName generates a name with the given prefix and a timestamp
 func (s *Suite) generateDatabaseName(prefix string) string {
-	return fmt.Sprintf("%s_%d", prefix, time.Now().UnixMilli())
+	return strings.ToLower(fmt.Sprintf("%s_%d", prefix, time.Now().UnixMilli()))
+}
+
+// PsqlDB returns the database instance for the test if initiated or returns error
+func (s *Suite) PsqlDB() (*sqlx.DB, error) {
+	ctx := s.GetContext()
+	if db, ok := ctx.Value(keyDatabase).(*sqlx.DB); ok {
+		return db, nil
+	}
+	return nil, fmt.Errorf("database not initiated, must call RequiresPostgresDatabase before using this method")
 }
