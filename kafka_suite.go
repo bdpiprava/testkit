@@ -122,30 +122,38 @@ func (s *Suite) Consume(topics []string, callback OnMessage) {
 	s.Require().NoError(consumer.SubscribeTopics(topics, nil))
 
 	go func(consumer *kafka.Consumer) {
-		done := false
+		var wg sync.WaitGroup
 		for {
-			if done {
-				closeSilently(consumer)
+			wg.Add(1)
+			if s.doConsume(consumer, log, callback, &wg) {
 				break
 			}
-
-			ev := consumer.Poll(int(pollTimeout.Milliseconds()))
-			switch e := ev.(type) {
-			case *kafka.Message:
-				log.Trace("Received message")
-				if callback(e) {
-					done = true
-				}
-			case kafka.PartitionEOF:
-				log.Info("Partition EOF")
-				break
-			case kafka.Error:
-				s.Require().NoError(e)
-			case kafka.AssignedPartitions:
-				s.Require().NoError(consumer.Assign(e.Partitions))
-			}
+			wg.Wait()
 		}
 	}(consumer)
+}
+
+func (s *Suite) doConsume(consumer *kafka.Consumer, log *logrus.Entry, callback OnMessage, wg *sync.WaitGroup) bool {
+	defer wg.Done()
+	if consumer.IsClosed() {
+		return true
+	}
+
+	ev := consumer.Poll(int(pollTimeout.Milliseconds()))
+	switch e := ev.(type) {
+	case *kafka.Message:
+		log.Trace("Received message")
+		return callback(e)
+	case kafka.PartitionEOF:
+		log.Info("Partition EOF")
+		break
+	case kafka.Error:
+		log.Warn(fmt.Sprintf("Received error from kafka: %#v", e))
+	case kafka.AssignedPartitions:
+		s.Require().NoError(consumer.Assign(e.Partitions))
+	}
+
+	return false
 }
 
 // WaitForMessage waits for a message to be consumed from the kafka topics
@@ -154,17 +162,17 @@ func (s *Suite) WaitForMessage(topic string, timout time.Duration) (*kafka.Messa
 	defer timeoutTimer.Stop()
 
 	done := make(chan struct{})
-	var received *kafka.Message
+	received := make(chan *kafka.Message, 1)
 	s.Consume([]string{topic}, func(msg *kafka.Message) bool {
+		received <- msg
 		close(done)
-		received = msg
 		return true
 	})
 
 	// Then - wait for the message to be consumed
 	select {
 	case <-done:
-		return received, nil
+		return <-received, nil
 	case <-timeoutTimer.C:
 		return nil, fmt.Errorf("timeout reached while waiting for the message in topic %s", topic)
 	}

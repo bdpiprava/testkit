@@ -70,7 +70,10 @@ func (s *KafkaTestSuiteTest) Test_RequiresKafka() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	count := 0
+	var mu sync.Mutex
 	s.Consume(topics, func(msg *kafka.Message) bool {
+		mu.Lock()
+		defer mu.Unlock()
 		if string(msg.Key) == key && string(msg.Value) == value {
 			count++
 		}
