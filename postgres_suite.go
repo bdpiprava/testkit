@@ -44,13 +44,13 @@ func (s *Suite) RequiresPostgresDatabase(name string) *sqlx.DB {
 
 // cleanDatabase delete the database instance
 func (s *Suite) cleanDatabase() {
-	if dataHolder, ok := s.postgresDBs[s.T().Name()]; ok {
-		if dataHolder.db == nil {
-			return
+	for _, holder := range s.postgresDBs {
+		if holder.db == nil {
+			continue
 		}
 
-		_ = dataHolder.db.Close()
-		_ = dataHolder.helper.Delete(dataHolder.generatedName)
+		_ = holder.db.Close()
+		_ = holder.helper.Delete(holder.generatedName)
 	}
 }
 
@@ -59,7 +59,8 @@ func (s *Suite) generateDatabaseName(prefix string) string {
 	return strings.ToLower(fmt.Sprintf("%s_%d", prefix, time.Now().UnixMilli()))
 }
 
-// PsqlDB returns the database instance for the test if initiated or returns error
+// PsqlDB returns the database instance for the current test
+// if initiated else returns error
 func (s *Suite) PsqlDB() (*sqlx.DB, error) {
 	if dataHolder, ok := s.postgresDBs[s.T().Name()]; ok {
 		return dataHolder.db, nil
@@ -67,8 +68,8 @@ func (s *Suite) PsqlDB() (*sqlx.DB, error) {
 	return nil, errDBNotInitiated
 }
 
-// PsqlDSN returns the database connection string for the test db if initiated
-// else returns error
+// PsqlDSN returns the database connection string for the current test db
+// if initiated else returns error
 func (s *Suite) PsqlDSN() (string, error) {
 	dataHolder, ok := s.postgresDBs[s.T().Name()]
 	if !ok {
@@ -76,4 +77,42 @@ func (s *Suite) PsqlDSN() (string, error) {
 	}
 
 	return dataHolder.helper.DSN(dataHolder.generatedName), nil
+}
+
+// PsqlDBRecursively returns the database instance starting from current test to parent tests
+// if initiated else returns error
+// In case of, TestOne -> TestOne/SubTestOne -> TestOne/SubTestOne/SubSubTestOne
+// If SubSubTestOne is trying to access the database, it will first check if it has a database
+// if not then it will check SubTestOne and then TestOne
+func (s *Suite) PsqlDBRecursively() (*sqlx.DB, error) {
+	testName := s.T().Name()
+	parts := strings.Split(testName, "/")
+
+	for i := len(parts); i >= 0; i-- {
+		name := strings.Join(parts[0:i], "/")
+		if dataHolder, ok := s.postgresDBs[name]; ok {
+			return dataHolder.db, nil
+		}
+	}
+
+	return nil, errDBNotInitiated
+}
+
+// PsqlDSNRecursively returns the database connection string starting from current test to parent tests
+// if initiated else returns error
+// In case of, TestOne -> TestOne/SubTestOne -> TestOne/SubTestOne/SubSubTestOne
+// If SubSubTestOne is trying to access the database, it will first check if it has a database
+// if not then it will check SubTestOne and then TestOne
+func (s *Suite) PsqlDSNRecursively() (string, error) {
+	testName := s.T().Name()
+	parts := strings.Split(testName, "/")
+
+	for i := len(parts); i >= 0; i-- {
+		name := strings.Join(parts[0:i], "/")
+		if dataHolder, ok := s.postgresDBs[name]; ok {
+			return dataHolder.helper.DSN(dataHolder.generatedName), nil
+		}
+	}
+
+	return "", errDBNotInitiated
 }
