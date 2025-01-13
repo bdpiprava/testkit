@@ -43,8 +43,9 @@ func Test_InitialiseDatabase_WithTemplateTrue(t *testing.T) {
 	// Then
 	require.NoError(t, err)
 	require.NotNil(t, db)
-	assertDatabaseCreated(t, db, "template_001", true)
+
 	defer closeSilently(db)
+	assertDatabaseCreated(t, db, "template_001", true)
 }
 
 func Test_InitialiseDatabase_WithTemplateFalse(t *testing.T) {
@@ -70,8 +71,35 @@ func Test_InitialiseDatabase_WithTemplateFalse(t *testing.T) {
 	// Then
 	require.NoError(t, err)
 	require.NotNil(t, db)
-	assertDatabaseCreated(t, db, "template_002", false)
+
 	defer closeSilently(db)
+	assertDatabaseCreated(t, db, "template_002", false)
+}
+
+func Test_InitialiseDatabase_WhenMigrationPathIsProjectRootRelative(t *testing.T) {
+	// When
+	db, err := internal.InitialiseDatabase(internal.SuiteConfig{
+		GoMigrateConfig: &internal.GoMigrateConfig{
+			DatabaseName:  "template_003",
+			MigrationPath: "$PROJECT_ROOT/internal/testdata/migrations",
+			IsTemplate:    true,
+			Fresh:         true,
+		},
+		PostgresConfig: internal.PostgresConfig{
+			Host:        "localhost:5544",
+			User:        "testkit",
+			Password:    "badger",
+			Database:    "testkit_db",
+			QueryParams: map[string]string{"sslmode": "disable"},
+		},
+	}, logrus.NewEntry(logrus.New()))
+
+	// Then
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	defer closeSilently(db)
+	assertDatabaseCreated(t, db, "template_001", true)
 }
 
 func closeSilently(db *sqlx.DB) {

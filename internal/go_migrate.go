@@ -2,6 +2,10 @@ package internal
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres" // postgres driver
@@ -14,7 +18,10 @@ import (
 const createFromTemplateQuery = `CREATE DATABASE %v WITH TEMPLATE '%v' OWNER ccs`
 
 // ErrMissingGoMigrateConfig ...
-var ErrMissingGoMigrateConfig = errors.New("missing go-migrate config")
+var (
+	ErrMissingGoMigrateConfig = errors.New("missing go-migrate config")
+	PathResolver              = regexp.MustCompile(`^\$PROJECT_ROOT/(.*)$`)
+)
 
 // InitialiseDatabase create a new database when go migrate is configured
 func InitialiseDatabase(config SuiteConfig, log logrus.FieldLogger) (*sqlx.DB, error) {
@@ -71,7 +78,13 @@ func InitialiseDatabase(config SuiteConfig, log logrus.FieldLogger) (*sqlx.DB, e
 		return nil, errors.Wrap(err, "failed to create database")
 	}
 
-	migrator, err := migrate.New(fmt.Sprintf("file://%s", cfg.MigrationPath), postgresDB.DSN(cfg.DatabaseName))
+	migrationPath, err := resolveMigrationPath(cfg.MigrationPath)
+	if err != nil {
+		log.WithError(err).Error("failed to get project root")
+		return nil, err
+	}
+
+	migrator, err := migrate.New(fmt.Sprintf("file://%s", migrationPath), postgresDB.DSN(cfg.DatabaseName))
 	if err != nil {
 		log.WithError(err).Error("failed to initialize migrations")
 		return nil, errors.Wrap(err, "failed to initialize migrations")
@@ -83,6 +96,32 @@ func InitialiseDatabase(config SuiteConfig, log logrus.FieldLogger) (*sqlx.DB, e
 	}
 
 	return postgresDB.connect(cfg.DatabaseName)
+}
+
+// resolveMigrationPath returns migration path after resolving the $PROJECT_ROOT placeholder
+func resolveMigrationPath(migrationPath string) (string, error) {
+	if PathResolver.MatchString(migrationPath) {
+		root, err := getProjectRoot()
+		if err != nil {
+			return "", err
+		}
+		return strings.ReplaceAll(migrationPath, "$PROJECT_ROOT", root), nil
+	}
+
+	return migrationPath, nil
+}
+
+func getProjectRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get working directory")
+	}
+
+	projectDir, err := locateConfigFile(wd)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to find project root")
+	}
+	return filepath.Dir(projectDir), err
 }
 
 func getCreateDatabaseQuery(name string, template bool) string {
