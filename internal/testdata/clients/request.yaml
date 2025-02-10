@@ -1,0 +1,16 @@
+---
+example-service-1:
+  - request:
+      method: "{{ method }}"
+      path: /api/v1/{{randomID}}
+      headers:
+        Authorization: "Bearer abcd"
+        Content-Type: "application/json"
+      queryParams:
+        region: "us"
+    response:
+      status: "{{ status }}"
+      headers:
+        Content-Type: "application/json"
+      body: |
+        {{ body }}

@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"github.com/wiremock/go-wiremock"
 	"gopkg.in/yaml.v3"
 )
 
@@ -38,6 +39,21 @@ func (s *Suite) SetupAPIMocksFromFile(file string, dynamicParams map[string]stri
 	}
 
 	return serviceURLs
+}
+
+// SetAPIMock sets the wiremock server with the given method, path, status and body
+func (s *Suite) SetAPIMock(namespace, method, path string, status int, body string) string {
+	namespace = testNameSanitizer.ReplaceAllString(namespace, "_")
+	stubRule := wiremock.NewStubRule(method, wiremock.URLMatching(filepath.Join("/", namespace, path))).
+		WillReturnResponse(wiremock.NewResponse().WithStatus(int64(status)).WithBody(body)).
+		AtPriority(1)
+
+	s.Require().NoError(wiremockClient.StubFor(stubRule))
+
+	mockURL, err := url.JoinPath(suiteConfig.APIMockConfig.Address, namespace)
+	s.Require().NoError(err)
+
+	return mockURL
 }
 
 // CleanAPIMock resets the wiremock server

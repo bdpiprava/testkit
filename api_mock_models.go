@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/wiremock/go-wiremock"
@@ -31,7 +32,7 @@ type Request struct {
 
 // Response is the response information
 type Response struct {
-	Status  int64             `yaml:"status" json:"status"`
+	Status  string            `yaml:"status" json:"status"`
 	Body    string            `yaml:"body" json:"body"`
 	Headers map[string]string `yaml:"headers" json:"headers"`
 }
@@ -49,7 +50,7 @@ func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.S
 	}
 
 	path := resolveTemplateValue(r.Path, dynamicParams)
-	req := wiremock.NewStubRule(r.Method, wiremock.URLMatching(fmt.Sprintf("/%s%s", path, queryStr)))
+	req := wiremock.NewStubRule(resolveTemplateValue(r.Method, dynamicParams), wiremock.URLMatching(fmt.Sprintf("/%s%s", path, queryStr)))
 	if strings.TrimSpace(r.Body) != "" {
 		req = req.WithBodyPattern(wiremock.EqualToJson(r.Body))
 	}
@@ -67,9 +68,11 @@ func (r *Request) ToWiremockRequest(dynamicParams map[string]string) *wiremock.S
 // ToWiremockResponse converts the Response to a wiremock.Response
 func (r *Response) ToWiremockResponse(dynamicParams map[string]string) wiremock.Response {
 	body := resolveTemplateValue(r.Body, dynamicParams)
+	status, _ := strconv.Atoi(resolveTemplateValue(r.Status, dynamicParams))
+
 	resp := wiremock.NewResponse().
 		WithBody(body).
-		WithStatus(r.Status)
+		WithStatus(int64(status))
 
 	for name, value := range r.Headers {
 		resp = resp.WithHeader(name, value)
