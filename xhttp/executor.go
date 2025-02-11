@@ -40,6 +40,7 @@ func buildRequest(opts RequestOptions) (*http.Request, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
 	}
+	req = req.WithContext(opts.Context)
 	req.URL = req.URL.JoinPath(opts.Path)
 	req.Header = opts.Headers
 	req.URL.RawQuery = opts.QueryParams.Encode()

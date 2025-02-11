@@ -1,6 +1,7 @@
 package xhttp
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/url"
@@ -34,6 +35,7 @@ type RequestOptions struct {
 	BasicAuth   BasicAuth
 	Path        string
 	Timeout     time.Duration
+	Context     context.Context
 }
 
 // RequestOption is a function that takes a pointer to Options and modifies it

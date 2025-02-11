@@ -1,6 +1,7 @@
 package xhttp
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 )
@@ -92,6 +93,13 @@ func WithQueryParam(key string, values ...string) RequestOption {
 			return
 		}
 		c.QueryParams[key] = values
+	}
+}
+
+// WithContext is a function that sets the context for the request
+func WithContext(ctx context.Context) RequestOption {
+	return func(c *RequestOptions) {
+		c.Context = ctx
 	}
 }
 
