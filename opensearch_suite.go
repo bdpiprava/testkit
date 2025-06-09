@@ -100,7 +100,7 @@ func (s *openSearch) IndexExists(name string) (bool, error) {
 	}
 
 	for _, index := range indices {
-		if strings.ToLower(index.Name) == strings.ToLower(name) {
+		if strings.EqualFold(index.Name, name) {
 			return true, nil
 		}
 	}
