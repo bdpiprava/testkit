@@ -1,6 +1,7 @@
 package xhttp
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/url"
@@ -56,6 +57,7 @@ func buildOpts(clientOpts ClientOptions, request *Request) RequestOptions {
 		Timeout:     clientOpts.Timeout,
 		Method:      http.MethodGet,
 		QueryParams: url.Values{},
+		Context:     context.Background(),
 	}
 
 	if clientOpts.Headers != nil {
