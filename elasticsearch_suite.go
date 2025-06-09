@@ -19,6 +19,8 @@ import (
 	"github.com/bdpiprava/testkit/search"
 )
 
+const successStatusCode = 299
+
 // SearchClient is the interface for the search client
 type SearchClient interface {
 	// CreateIndex creates a new index
@@ -125,7 +127,7 @@ func (s *elasticSearch) IndexExists(name string) (bool, error) {
 	}
 
 	for _, index := range indices {
-		if strings.ToLower(index.Name) == strings.ToLower(name) {
+		if strings.EqualFold(index.Name, name) {
 			return true, nil
 		}
 	}
@@ -315,7 +317,7 @@ func parseElasticSearchResponse[T any](statusCode int, body io.ReadCloser) (T, e
 	}
 
 	// If the status code is not 2xx, return an error
-	if statusCode > 299 {
+	if statusCode > successStatusCode {
 		return result, fmt.Errorf("received status code: %d", statusCode)
 	}
 

@@ -146,7 +146,6 @@ func (s *Suite) doConsume(consumer *kafka.Consumer, log *logrus.Entry, callback 
 		return callback(e)
 	case kafka.PartitionEOF:
 		log.Info("Partition EOF")
-		break
 	case kafka.Error:
 		log.Warn(fmt.Sprintf("Received error from kafka: %#v", e))
 	case kafka.AssignedPartitions:

@@ -1,11 +1,12 @@
 module github.com/bdpiprava/testkit
 
-go 1.23.2
+go 1.24
 
 require (
-	github.com/confluentinc/confluent-kafka-go/v2 v2.6.1
+	github.com/confluentinc/confluent-kafka-go/v2 v2.10.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
+	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
@@ -17,16 +18,15 @@ require (
 )
 
 require (
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 )

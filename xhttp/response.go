@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const successStatusCode = 299
+
 // Response is a response struct that holds the status code, body and raw body
 type Response struct {
 	Status     string
@@ -34,7 +36,7 @@ func newResponse(httpResp *http.Response, bType any) (*Response, error) {
 		RawBody:    bodyBytes,
 	}
 
-	if httpResp.StatusCode > 299 {
+	if httpResp.StatusCode > successStatusCode {
 		response.Body = tryParsingErrorResponse(bodyBytes)
 		return response, nil
 	}
