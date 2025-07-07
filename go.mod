@@ -3,7 +3,7 @@ module github.com/bdpiprava/testkit
 go 1.24
 
 require (
-	github.com/confluentinc/confluent-kafka-go/v2 v2.10.1
+	github.com/confluentinc/confluent-kafka-go/v2 v2.11.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
