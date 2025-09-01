@@ -3,7 +3,7 @@ module github.com/bdpiprava/testkit
 go 1.24
 
 require (
-	github.com/confluentinc/confluent-kafka-go/v2 v2.10.1
+	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
@@ -12,7 +12,7 @@ require (
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/wiremock/go-wiremock v1.13.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -20,13 +20,14 @@ require (
 require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/moby/sys/userns v0.1.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
+	github.com/moby/go-archive v0.1.0 // indirect
+	github.com/moby/sys/atomicwriter v0.1.0 // indirect
+	github.com/moby/sys/user v0.4.0 // indirect
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/golang-migrate/migrate/v4 v4.18.3
+	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 )
